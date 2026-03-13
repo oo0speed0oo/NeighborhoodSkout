@@ -1,7 +1,5 @@
 import SwiftUI
 
-// MARK: - Residents Page
-
 struct ResidentsView: View {
     @ObservedObject var vm: BlockMapViewModel
     let blockId: UUID
@@ -25,11 +23,7 @@ struct ResidentsView: View {
 
     var body: some View {
         Group {
-            if residents.isEmpty {
-                emptyState
-            } else {
-                residentsList
-            }
+            if residents.isEmpty { emptyState } else { residentsList }
         }
         .navigationTitle(blockLabel)
         .navigationBarTitleDisplayMode(.inline)
@@ -66,9 +60,7 @@ struct ResidentsView: View {
             Button(action: { showAddSheet = true }) {
                 Label("Add Resident", systemImage: "person.badge.plus")
                     .padding(.horizontal, 24).padding(.vertical, 10)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(99)
+                    .background(Color.accentColor).foregroundColor(.white).cornerRadius(99)
             }
             .padding(.top, 8)
         }
@@ -139,8 +131,7 @@ struct PersonRowView: View {
                     Text(person.fullName).font(.system(size: 15, weight: .medium))
                     Text(person.role.rawValue).font(.system(size: 11))
                         .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Color(.systemGray5)).cornerRadius(99)
-                        .foregroundColor(.secondary)
+                        .background(Color(.systemGray5)).cornerRadius(99).foregroundColor(.secondary)
                 }
                 HStack(spacing: 6) {
                     Text("🎂 \(dateFormatter.string(from: person.birthday))")

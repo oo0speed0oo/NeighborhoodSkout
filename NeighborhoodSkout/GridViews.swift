@@ -10,9 +10,9 @@ struct SingleBlockView: View {
     var body: some View {
         VStack(spacing: max(2, cellSize * 0.04)) {
             Text(block.icon)
-                .font(.system(size: max(10, cellSize * 0.36)))
-            Text(block.label)
-                .font(.system(size: max(7, cellSize * 0.14), weight: .medium))
+                .font(.system(size: max(10, cellSize * 0.34)))
+            Text(block.houseName)
+                .font(.system(size: max(7, cellSize * 0.13), weight: .medium))
                 .foregroundColor(.blockText(block.colorName))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -36,7 +36,42 @@ struct SingleBlockView: View {
     }
 }
 
-// MARK: - Block Grid
+// MARK: - Road Cell Visual
+
+struct RoadCellView: View {
+    let cellSize: CGFloat
+    let isCenter: Bool  // true = center stripe, false = shoulder
+
+    var body: some View {
+        ZStack {
+            // Asphalt background
+            RoundedRectangle(cornerRadius: 0)
+                .fill(Color(red: 0.25, green: 0.25, blue: 0.27))
+
+            if isCenter {
+                // Dashed center line
+                VStack(spacing: cellSize * 0.12) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        Rectangle()
+                            .fill(Color(red: 1.0, green: 0.85, blue: 0.0).opacity(0.7))
+                            .frame(width: 3, height: cellSize * 0.15)
+                    }
+                }
+            } else {
+                // Solid edge line
+                HStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.white.opacity(0.25))
+                        .frame(width: 2)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Block Grid View
 
 struct BlockGridView: View {
     let gridIndex: Int
@@ -51,35 +86,42 @@ struct BlockGridView: View {
     var onCellTap: (Int, Int, Int) -> Void
 
     var body: some View {
-        VStack(spacing: cellGap) {
+        VStack(spacing: 0) {           // no gap between rows for road continuity
             ForEach(0..<rows, id: \.self) { row in
                 HStack(spacing: cellGap) {
                     ForEach(0..<cols, id: \.self) { col in
-                        let block      = vm.block(gridIndex: gridIndex, row: row, col: col)
-                        let isEmpty    = block == nil
+                        let isRoad     = vm.isRoad(gridIndex: gridIndex, col: col)
+                        let block      = isRoad ? nil : vm.block(gridIndex: gridIndex, row: row, col: col)
+                        let isEmpty    = !isRoad && block == nil
                         let isPending  = block?.id == movingBlockId
                         let isMoveMode = movingBlockId != nil
 
                         ZStack {
-                            RoundedRectangle(cornerRadius: max(4, cellSize * 0.12))
-                                .fill(isMoveMode && isEmpty
-                                      ? Color(red:0.88,green:0.97,blue:0.88)
-                                      : Color(.systemBackground))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: max(4, cellSize * 0.12))
-                                        .stroke(
-                                            isMoveMode && isEmpty
-                                                ? Color(red:0.3,green:0.75,blue:0.3)
-                                                : Color(.separator).opacity(0.35),
-                                            lineWidth: isMoveMode && isEmpty ? 1.5 : 0.5
-                                        )
-                                )
-                            if let block = block {
-                                SingleBlockView(block: block, cellSize: cellSize, isPending: isPending)
+                            if isRoad {
+                                // Road — not tappable for placement
+                                RoadCellView(cellSize: cellSize, isCenter: col == 1)
+                            } else {
+                                // House cell
+                                RoundedRectangle(cornerRadius: max(4, cellSize * 0.12))
+                                    .fill(isMoveMode && isEmpty
+                                          ? Color(red:0.88,green:0.97,blue:0.88)
+                                          : Color(.systemBackground))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: max(4, cellSize * 0.12))
+                                            .stroke(
+                                                isMoveMode && isEmpty
+                                                    ? Color(red:0.3,green:0.75,blue:0.3)
+                                                    : Color(.separator).opacity(0.35),
+                                                lineWidth: isMoveMode && isEmpty ? 1.5 : 0.5
+                                            )
+                                    )
+                                if let block = block {
+                                    SingleBlockView(block: block, cellSize: cellSize, isPending: isPending)
+                                }
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { onCellTap(gridIndex, row, col) }
                             }
-                            Color.clear
-                                .contentShape(Rectangle())
-                                .onTapGesture { onCellTap(gridIndex, row, col) }
                         }
                         .frame(width: cellSize, height: cellSize)
                     }
@@ -116,7 +158,8 @@ struct StreetLabelView: View {
                     isEditing = false
                 }.font(.caption).foregroundColor(.blue)
             } else {
-                Text(vm.streetNames[index]).font(.caption).fontWeight(.medium).foregroundColor(.secondary)
+                Text(vm.streetNames[index])
+                    .font(.caption).fontWeight(.medium).foregroundColor(.secondary)
                 Button(action: { isEditing = true }) {
                     Image(systemName: "pencil").font(.system(size: 11)).foregroundColor(.secondary.opacity(0.6))
                 }
