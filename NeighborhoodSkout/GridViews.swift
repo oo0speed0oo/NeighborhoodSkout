@@ -65,8 +65,6 @@ struct BlockGridView: View {
     let cols: Int
     @ObservedObject var vm: BlockMapViewModel
     @Binding var movingBlockId: UUID?
-    @Binding var selectedBlock: Block?
-    @Binding var showActionSheet: Bool
     var onCellTap: (Int, Int, Int) -> Void
 
     var body: some View {
@@ -133,14 +131,15 @@ struct StreetLabelView: View {
         return AnyView(HStack(spacing: 6) {
             Image(systemName: "road.lanes").font(.caption).foregroundColor(.secondary)
             if isEditing {
-                TextField("Street name", text: $editText, onCommit: {
-                    let t = editText.trimmingCharacters(in: .whitespaces)
-                    if !t.isEmpty { vm.renameStreet(index: index, newName: t) }
-                    isEditing = false
-                })
-                .font(.caption).fontWeight(.medium)
-                .textFieldStyle(RoundedBorderTextFieldStyle()).frame(maxWidth: 200)
-                .onAppear { editText = vm.streets[index].name }
+                TextField("Street name", text: $editText)
+                    .font(.caption).fontWeight(.medium)
+                    .textFieldStyle(RoundedBorderTextFieldStyle()).frame(maxWidth: 200)
+                    .onSubmit {
+                        let t = editText.trimmingCharacters(in: .whitespaces)
+                        if !t.isEmpty { vm.renameStreet(index: index, newName: t) }
+                        isEditing = false
+                    }
+                    .onAppear { editText = vm.streets[index].name }
                 Button("Done") {
                     let t = editText.trimmingCharacters(in: .whitespaces)
                     if !t.isEmpty { vm.renameStreet(index: index, newName: t) }

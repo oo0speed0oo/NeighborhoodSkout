@@ -17,7 +17,12 @@ struct ResidentsView: View {
         let order: [Person.FamilyRole] = [.grandparent, .parent, .child, .other]
         return order.compactMap { role in
             let people = residents.filter { $0.role == role }
-            return people.isEmpty ? nil : (role.rawValue + "s", people)
+            let label: String
+            switch role {
+            case .child: label = "Children"
+            default:     label = role.rawValue + "s"
+            }
+            return people.isEmpty ? nil : (label, people)
         }
     }
 

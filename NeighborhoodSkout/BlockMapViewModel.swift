@@ -11,8 +11,12 @@ class BlockMapViewModel: ObservableObject {
     }
     @Published var csvLoadMessage: String? = nil
 
+    // Template import state
+    @Published var isImporting = false
+    @Published var importError: String? = nil
+
     private let iCloudCSVName   = "neighborhood_data.csv"
-    private let sourceURLKey    = "nsk_sourceURL"  // remembers which file we loaded from
+    private let sourceURLKey    = "nsk_sourceURL"
     private var isSaving        = false
     private var sourceURL: URL? {
         get {
@@ -34,10 +38,8 @@ class BlockMapViewModel: ObservableObject {
     }
 
     // MARK: - Auto load on launch
-    // Priority: 1) iCloud Drive  2) Documents CSV  3) Blank template
 
     private func autoLoadOnLaunch() {
-        // 1. Try remembered source URL first (file user previously loaded from)
         if let saved = sourceURL, FileManager.default.fileExists(atPath: saved.path) {
             let accessing = saved.startAccessingSecurityScopedResource()
             if let result = CSVManager.loadFrom(url: saved) {
@@ -48,23 +50,20 @@ class BlockMapViewModel: ObservableObject {
             }
             if accessing { saved.stopAccessingSecurityScopedResource() }
         }
-        // 2. Try auto-detected iCloud Drive
         if let icloudURL = iCloudCSVURL(), FileManager.default.fileExists(atPath: icloudURL.path) {
             if let result = CSVManager.loadFrom(url: icloudURL) {
                 apply(result: result)
-                sourceURL = icloudURL  // remember it
+                sourceURL = icloudURL
                 CSVManager.save(blocks: blocks, streets: streets)
                 showMessage("🌩 Loaded from iCloud Drive")
                 return
             }
         }
-        // 3. Try Documents CSV
         if FileManager.default.fileExists(atPath: CSVManager.csvURL.path),
            let result = CSVManager.load() {
             apply(result: result)
             return
         }
-        // 4. Blank template for new users
         loadBlankTemplate()
     }
 
@@ -77,8 +76,8 @@ class BlockMapViewModel: ObservableObject {
 
     private func saveAll() {
         guard !isSaving else { return }
-        CSVManager.save(blocks: blocks, streets: streets)  // always save to Documents
-        saveBackToSource()                                  // also sync to iCloud if known
+        CSVManager.save(blocks: blocks, streets: streets)
+        saveBackToSource()
     }
 
     private func saveBackToSource() {
@@ -105,15 +104,15 @@ class BlockMapViewModel: ObservableObject {
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
         if let result = CSVManager.loadFrom(url: url) {
             apply(result: result)
-            sourceURL = url          // remember this file for future saves
-            saveBackToSource()       // also mirror to Documents
+            sourceURL = url
+            saveBackToSource()
             showMessage("✅ Loaded \(blocks.count) homes — saves will sync to iCloud")
         } else {
             showMessage("⚠️ Could not read that file")
         }
     }
 
-    // MARK: - Load bundled CSV (your personal data, for you only)
+    // MARK: - Load bundled CSV
 
     func loadBundledCSV() {
         guard let bundleURL = Bundle.main.url(forResource: "neighborhood_data", withExtension: "csv") else {
@@ -128,13 +127,12 @@ class BlockMapViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Blank template (for new App Store users)
+    // MARK: - Blank template
 
     func loadBlankTemplate() {
         isSaving = true
         streets = CSVManager.defaultStreets()
         blocks  = []
-        // Pre-populate empty house slots
         let colors = colorNames
         let icns   = icons
         var idx    = 0
@@ -167,6 +165,53 @@ class BlockMapViewModel: ObservableObject {
         showMessage("💾 Saved \(blocks.count) homes to \(dest)")
     }
 
+    // MARK: - Template export
+    // Produces a JSON string with streets + house layout but NO resident data.
+    // Safe to share publicly — neighbors import it to get the map without your personal info.
+
+    func templateJSON() -> String {
+        let data = NeighborhoodData(
+            streets: streets,
+            blocks: blocks.map { var b = $0; b.residents = []; return b }
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let encoded = try? encoder.encode(data),
+              let str     = String(data: encoded, encoding: .utf8) else { return "{}" }
+        return str
+    }
+
+    // MARK: - Template import
+    // Downloads a JSON template from a URL and replaces the current map layout.
+    // Residents are always stripped from imported data — only the layout comes across.
+
+    func importTemplate(from urlString: String) async {
+        let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed) else {
+            await MainActor.run { importError = "That doesn't look like a valid URL." }
+            return
+        }
+        await MainActor.run { isImporting = true; importError = nil }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let template  = try JSONDecoder().decode(NeighborhoodData.self, from: data)
+            await MainActor.run {
+                isSaving = true
+                streets  = template.streets
+                blocks   = template.blocks.map { var b = $0; b.residents = []; return b }
+                isSaving = false
+                saveAll()
+                isImporting = false
+                showMessage("✅ Neighborhood template imported")
+            }
+        } catch {
+            await MainActor.run {
+                importError = "Couldn't load template: \(error.localizedDescription)"
+                isImporting = false
+            }
+        }
+    }
+
     // MARK: - Street mutations
 
     func addStreet(name: String, template: StreetTemplate, rows: Int = 5) {
@@ -175,16 +220,12 @@ class BlockMapViewModel: ObservableObject {
 
     func removeStreet(at index: Int) {
         guard index < streets.count else { return }
-        // Build new blocks and streets atomically before publishing any changes
         var newBlocks = blocks.filter { $0.gridIndex != index }
         for i in 0..<newBlocks.count {
-            if newBlocks[i].gridIndex > index {
-                newBlocks[i].gridIndex -= 1
-            }
+            if newBlocks[i].gridIndex > index { newBlocks[i].gridIndex -= 1 }
         }
         var newStreets = streets
         newStreets.remove(at: index)
-        // Apply both changes together on the main thread to avoid mid-update renders
         DispatchQueue.main.async {
             self.isSaving = true
             self.blocks  = newBlocks

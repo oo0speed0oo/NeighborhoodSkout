@@ -136,6 +136,14 @@ struct Person: Identifiable, Codable, Equatable {
     var fullName: String { "\(firstName) \(lastName)" }
 }
 
+// MARK: - Neighborhood Data (import / export envelope)
+// streets carries the full Street layout; blocks are stripped of residents on export.
+
+struct NeighborhoodData: Codable {
+    var streets: [Street]
+    var blocks: [Block]
+}
+
 // MARK: - Block
 
 struct Block: Identifiable, Codable, Equatable {
