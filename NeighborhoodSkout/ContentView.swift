@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var vm = BlockMapViewModel()
@@ -9,6 +10,12 @@ struct ContentView: View {
     @State private var renameText        = ""
     @State private var movingBlockId:    UUID?  = nil
     @State private var residentsBlockId: UUID?  = nil
+    @State private var showFilePicker    = false
+    @State private var showLineSheet     = false
+    @State private var lineSheetBlock:   Block? = nil
+    @State private var showAddStreet     = false
+    @State private var showDeleteStreetAlert = false
+    @State private var streetToDelete:   Int?   = nil
 
     // Zoom
     @State private var zoomLevel: Int = 3
@@ -16,16 +23,12 @@ struct ContentView: View {
     var cellSize: CGFloat { zoomSteps[zoomLevel] }
     var canZoomIn:  Bool { zoomLevel < zoomSteps.count - 1 }
     var canZoomOut: Bool { zoomLevel > 0 }
-
     let cellGap:     CGFloat = 3
     let gridSpacing: CGFloat = 20
 
     func handleCellTap(gridIndex: Int, row: Int, col: Int) {
-        // Ignore taps on road cells
-        guard vm.isHouseable(gridIndex: gridIndex, col: col) else { return }
-
+        guard vm.isHouseable(gridIndex: gridIndex, row: row, col: col) else { return }
         let tappedBlock = vm.block(gridIndex: gridIndex, row: row, col: col)
-
         if let movingId = movingBlockId {
             if tappedBlock == nil {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -37,28 +40,78 @@ struct ContentView: View {
             }
             return
         }
-
-        if let block = tappedBlock {
-            selectedBlock = block
-            showActionSheet = true
-        }
+        if let block = tappedBlock { selectedBlock = block; showActionSheet = true }
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Banner
+                if let msg = vm.csvLoadMessage {
+                    Text(msg).font(.caption)
+                        .padding(.horizontal, 16).padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+                        .background(Color(red:0.90,green:0.97,blue:0.90))
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 zoomBar
                 mapScrollView
             }
+            .animation(.easeInOut(duration: 0.3), value: vm.csvLoadMessage)
             .navigationTitle("NeighborhoodSkout")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { vm.saveToCSV() }) {
+                        Label("Save", systemImage: "square.and.arrow.up")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { vm.addBlock() }) {
-                        Label("Add Home", systemImage: "plus")
+                    Menu {
+                        // House
+                        Button(action: { vm.addBlock() }) {
+                            Label("Add Home", systemImage: "plus.circle")
+                        }
+                        // Street
+                        Button(action: { showAddStreet = true }) {
+                            Label("Add Street", systemImage: "road.lanes")
+                        }
+                        Divider()
+                        // File loading
+                        Button(action: { showFilePicker = true }) {
+                            Label("Load from iCloud Drive", systemImage: "icloud.and.arrow.down")
+                        }
+                        Button(action: { showFilePicker = true }) {
+                            Label("Load from Local Storage", systemImage: "folder")
+                        }
+                        Divider()
+                        Button(action: { vm.loadBundledCSV() }) {
+                            Label("Load Default Data", systemImage: "arrow.clockwise")
+                        }
+                    } label: {
+                        Image(systemName: "plus")
                     }
                 }
             }
+            .sheet(isPresented: $showAddStreet) {
+                AddStreetView { name, template, rows in
+                    vm.addStreet(name: name, template: template, rows: rows)
+                }
+            }
+            .fileImporter(
+                isPresented: $showFilePicker,
+                allowedContentTypes: [UTType.commaSeparatedText, UTType.plainText, UTType.data],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    if let url = urls.first { vm.loadFromURL(url) }
+                case .failure(let error):
+                    vm.csvLoadMessage = "⚠️ \(error.localizedDescription)"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) { vm.csvLoadMessage = nil }
+                }
+            }
+            // Residents page
             .navigationDestination(isPresented: Binding(
                 get: { residentsBlockId != nil },
                 set: { if !$0 { residentsBlockId = nil } }
@@ -68,13 +121,27 @@ struct ContentView: View {
                     ResidentsView(vm: vm, blockId: bid, blockLabel: block.houseName)
                 }
             }
+            // LINE page
+            .navigationDestination(isPresented: Binding(
+                get: { showLineSheet },
+                set: { if !$0 { showLineSheet = false } }
+            )) {
+                if let block = lineSheetBlock {
+                    LineContactSheet(block: block)
+                }
+            }
             .confirmationDialog(
                 selectedBlock?.houseName ?? "House",
-                isPresented: $showActionSheet,
-                titleVisibility: .visible
+                isPresented: $showActionSheet, titleVisibility: .visible
             ) {
                 Button("👥 Residents") {
                     if let b = selectedBlock { residentsBlockId = b.id }
+                }
+                if let b = selectedBlock, b.residents.contains(where: { !$0.lineId.isEmpty }) {
+                    Button("💬 Message on LINE") {
+                        lineSheetBlock = b
+                        showLineSheet = true
+                    }
                 }
                 Button("Move") {
                     if let b = selectedBlock { movingBlockId = b.id }
@@ -99,6 +166,20 @@ struct ContentView: View {
                     }
                 }
                 Button("Cancel", role: .cancel) {}
+            }
+            .alert("Remove Street", isPresented: $showDeleteStreetAlert) {
+                Button("Remove", role: .destructive) {
+                    if let idx = streetToDelete {
+                        // Small delay so any active UI clears before mutation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            vm.removeStreet(at: idx)
+                            streetToDelete = nil
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) { streetToDelete = nil }
+            } message: {
+                Text("This will remove the street and all houses on it.")
             }
         }
     }
@@ -133,7 +214,6 @@ struct ContentView: View {
                 .foregroundColor(.green)
                 .padding(.horizontal, 10).padding(.vertical, 4)
                 .background(Color(red:0.90,green:0.97,blue:0.90)).cornerRadius(99)
-
                 Button(action: { movingBlockId = nil }) {
                     Text("Cancel").font(.caption).foregroundColor(.secondary)
                 }
@@ -155,15 +235,19 @@ struct ContentView: View {
     var mapScrollView: some View {
         ScrollView([.vertical, .horizontal], showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(0..<vm.gridCount, id: \.self) { gIdx in
-                    StreetLabelView(index: gIdx, vm: vm)
-                        .padding(.top, gIdx == 0 ? 16 : gridSpacing)
+                ForEach(Array(vm.streets.enumerated()), id: \.element.id) { gIdx, street in
+                    let cfg = street.config
+                    StreetLabelView(index: gIdx, vm: vm, onDelete: {
+                        streetToDelete = gIdx
+                        showDeleteStreetAlert = true
+                    })
+                    .padding(.top, gIdx == 0 ? 16 : gridSpacing)
                     BlockGridView(
                         gridIndex: gIdx,
                         cellSize: cellSize,
                         cellGap: cellGap,
-                        rows: vm.rows,
-                        cols: vm.cols,
+                        rows: cfg.rows,
+                        cols: cfg.cols,
                         vm: vm,
                         movingBlockId: $movingBlockId,
                         selectedBlock: $selectedBlock,
@@ -172,6 +256,18 @@ struct ContentView: View {
                     )
                     .padding(.horizontal, 16)
                 }
+                // Add Street button at bottom of map
+                Button(action: { showAddStreet = true }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle").font(.caption)
+                        Text("Add Street").font(.caption).fontWeight(.medium)
+                    }
+                    .foregroundColor(.accentColor)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(Color.accentColor.opacity(0.08))
+                    .cornerRadius(99)
+                }
+                .padding(.top, 20).padding(.horizontal, 20)
                 Spacer(minLength: 40)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -179,6 +275,4 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
-}
+#Preview { ContentView() }

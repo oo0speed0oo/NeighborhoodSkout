@@ -10,6 +10,7 @@ struct PersonFormView: View {
     @State private var gender    = Person.Gender.male
     @State private var birthday  = Calendar.current.date(byAdding: .year, value: -30, to: Date()) ?? Date()
     @State private var role      = Person.FamilyRole.parent
+    @State private var lineId    = ""
 
     var isEditing: Bool { existing != nil }
 
@@ -39,6 +40,27 @@ struct PersonFormView: View {
                         Text("Age: \(ageFrom(birthday)) years old").foregroundColor(.secondary)
                     }
                 }
+                Section {
+                    HStack(spacing: 10) {
+                        // LINE logo green circle
+                        ZStack {
+                            Circle()
+                                .fill(Color(red: 0.07, green: 0.78, blue: 0.35))
+                                .frame(width: 28, height: 28)
+                            Text("L")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        TextField("LINE ID (optional)", text: $lineId)
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                    }
+                } header: {
+                    Text("LINE")
+                } footer: {
+                    Text("Enter their LINE ID to message them directly from the app")
+                        .font(.caption)
+                }
             }
             .navigationTitle(isEditing ? "Edit Resident" : "Add Resident")
             .navigationBarTitleDisplayMode(.inline)
@@ -54,7 +76,8 @@ struct PersonFormView: View {
                             lastName:  lastName.trimmingCharacters(in: .whitespaces),
                             gender:    gender,
                             birthday:  birthday,
-                            role:      role
+                            role:      role,
+                            lineId:    lineId.trimmingCharacters(in: .whitespaces)
                         )
                         onSave(p)
                         dismiss()
@@ -70,6 +93,7 @@ struct PersonFormView: View {
                     gender    = p.gender
                     birthday  = p.birthday
                     role      = p.role
+                    lineId    = p.lineId
                 }
             }
         }
