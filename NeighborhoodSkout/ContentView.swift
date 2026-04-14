@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var renameText        = ""
     @State private var movingBlockId:    UUID?  = nil
     @State private var residentsBlockId: UUID?  = nil
+    @State private var showImportSheet   = false
 
     // Zoom
     @State private var zoomLevel: Int = 3
@@ -54,10 +55,31 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { vm.addBlock() }) {
-                        Label("Add Home", systemImage: "plus")
+                    HStack(spacing: 4) {
+                        Button(action: { vm.addBlock() }) {
+                            Label("Add Home", systemImage: "plus")
+                        }
+                        Menu {
+                            ShareLink(
+                                item: vm.templateJSON(),
+                                subject: Text("Neighborhood Template"),
+                                message: Text("Import this into NeighborhoodSkout to get our neighborhood map.")
+                            ) {
+                                Label("Share Template", systemImage: "square.and.arrow.up")
+                            }
+                            Button {
+                                showImportSheet = true
+                            } label: {
+                                Label("Import from URL", systemImage: "square.and.arrow.down")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                        }
                     }
                 }
+            }
+            .sheet(isPresented: $showImportSheet) {
+                ImportTemplateView(vm: vm)
             }
             .navigationDestination(isPresented: Binding(
                 get: { residentsBlockId != nil },
@@ -166,8 +188,6 @@ struct ContentView: View {
                         cols: vm.cols,
                         vm: vm,
                         movingBlockId: $movingBlockId,
-                        selectedBlock: $selectedBlock,
-                        showActionSheet: $showActionSheet,
                         onCellTap: handleCellTap
                     )
                     .padding(.horizontal, 16)
@@ -175,6 +195,81 @@ struct ContentView: View {
                 Spacer(minLength: 40)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+// MARK: - Import Template Sheet
+
+struct ImportTemplateView: View {
+    @ObservedObject var vm: BlockMapViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var urlText = ""
+    @State private var showConfirm = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("https://...", text: $urlText)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                } header: {
+                    Text("Template URL")
+                } footer: {
+                    Text("Paste the URL your neighbor shared. This will replace your current map layout. Your neighbor's personal info will NOT be imported.")
+                }
+
+                if let error = vm.importError {
+                    Section {
+                        Label(error, systemImage: "exclamationmark.triangle")
+                            .foregroundColor(.red)
+                            .font(.footnote)
+                    }
+                }
+            }
+            .navigationTitle("Import Template")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Import") { showConfirm = true }
+                        .fontWeight(.semibold)
+                        .disabled(urlText.trimmingCharacters(in: .whitespaces).isEmpty || vm.isImporting)
+                }
+            }
+            .overlay {
+                if vm.isImporting {
+                    ZStack {
+                        Color.black.opacity(0.25).ignoresSafeArea()
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text("Importing…").font(.caption).foregroundColor(.secondary)
+                        }
+                        .padding(24)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                }
+            }
+            .confirmationDialog(
+                "Replace your map?",
+                isPresented: $showConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Import & Replace", role: .destructive) {
+                    Task {
+                        await vm.importTemplate(from: urlText)
+                        if vm.importError == nil { dismiss() }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will replace your current streets and houses with the template. Your own resident info won't be affected if you cancel, but it will be cleared if you proceed.")
+            }
         }
     }
 }
