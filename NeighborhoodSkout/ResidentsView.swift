@@ -125,32 +125,76 @@ struct PersonRowView: View {
     }()
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle().fill(person.gender.color).frame(width: 46, height: 46)
-                    .overlay(Circle().stroke(person.gender.borderColor, lineWidth: 1))
-                Text(person.gender.icon).font(.system(size: 22))
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(person.fullName).font(.system(size: 15, weight: .medium))
-                    Text(person.role.rawValue).font(.system(size: 11))
-                        .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Color(.systemGray5)).cornerRadius(99).foregroundColor(.secondary)
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                // Gender avatar
+                ZStack {
+                    Circle().fill(person.gender.color).frame(width: 46, height: 46)
+                        .overlay(Circle().stroke(person.gender.borderColor, lineWidth: 1))
+                    Text(person.gender.icon).font(.system(size: 22))
                 }
-                HStack(spacing: 6) {
-                    Text("🎂 \(dateFormatter.string(from: person.birthday))")
-                        .font(.caption).foregroundColor(.secondary)
-                    Text("·").foregroundColor(.secondary)
-                    Text("Age \(person.age)").font(.caption).foregroundColor(.secondary)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(person.fullName).font(.system(size: 15, weight: .medium))
+                        Text(person.role.rawValue).font(.system(size: 11))
+                            .padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(Color(.systemGray5)).cornerRadius(99).foregroundColor(.secondary)
+                    }
+                    HStack(spacing: 6) {
+                        Text("🎂 \(dateFormatter.string(from: person.birthday))")
+                            .font(.caption).foregroundColor(.secondary)
+                        Text("·").foregroundColor(.secondary)
+                        Text("Age \(person.age)").font(.caption).foregroundColor(.secondary)
+                    }
                 }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary.opacity(0.4))
             }
-            Spacer()
-            Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary.opacity(0.4))
+            .padding(12)
+
+            // LINE button — only shows if lineId is set
+            if !person.lineId.isEmpty {
+                Divider().padding(.horizontal, 12)
+                Button(action: { openLine(id: person.lineId) }) {
+                    HStack(spacing: 8) {
+                        // LINE logo
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color(red: 0.07, green: 0.78, blue: 0.35))
+                                .frame(width: 24, height: 24)
+                            Text("LINE")
+                                .font(.system(size: 7, weight: .black))
+                                .foregroundColor(.white)
+                        }
+                        Text(person.lineId)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color(red: 0.07, green: 0.65, blue: 0.30))
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(red: 0.07, green: 0.65, blue: 0.30))
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color(red: 0.07, green: 0.78, blue: 0.35).opacity(0.08))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
         }
-        .padding(12)
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.35), lineWidth: 0.5))
+    }
+
+    private func openLine(id: String) {
+        let lineURL = URL(string: "line://ti/p/~\(id)")!
+        UIApplication.shared.open(lineURL) { success in
+            if !success {
+                if let webURL = URL(string: "https://line.me/ti/p/~\(id)") {
+                    UIApplication.shared.open(webURL)
+                }
+            }
+        }
     }
 }

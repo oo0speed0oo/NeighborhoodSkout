@@ -182,6 +182,7 @@ class BlockMapViewModel: ObservableObject {
 
     // MARK: - Template export
     // Produces a JSON string with streets + house layout but NO resident data.
+    // Safe to share publicly — neighbors import it to get the map without your personal info.
 
     func templateJSON() -> String {
         let data = NeighborhoodData(
@@ -197,6 +198,8 @@ class BlockMapViewModel: ObservableObject {
     }
 
     // MARK: - Template import
+    // Downloads a JSON template from a URL and replaces the current map layout.
+    // Residents are always stripped from imported data — only the layout comes across.
 
     func importTemplate(from urlString: String) async {
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -207,7 +210,9 @@ class BlockMapViewModel: ObservableObject {
         await MainActor.run { isImporting = true; importError = nil }
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            let template  = try JSONDecoder().decode(NeighborhoodData.self, from: data)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let template = try decoder.decode(NeighborhoodData.self, from: data)
             await MainActor.run {
                 isSaving = true
                 streets  = template.streets
