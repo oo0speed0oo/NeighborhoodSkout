@@ -17,6 +17,8 @@ struct ContentView: View {
     @State private var showDeleteStreetAlert  = false
     @State private var streetToDelete:        Int?   = nil
     @State private var showImportSheet        = false
+    @State private var decorateMode           = false
+    @State private var decoratingBlock:       Block? = nil
 
     // Zoom
     @State private var zoomLevel: Int = 3
@@ -39,6 +41,10 @@ struct ContentView: View {
             } else if tappedBlock?.id == movingId {
                 movingBlockId = nil
             }
+            return
+        }
+        if decorateMode {
+            if let block = tappedBlock { decoratingBlock = block }
             return
         }
         if let block = tappedBlock { selectedBlock = block; showActionSheet = true }
@@ -112,6 +118,13 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showImportSheet) {
                 ImportTemplateView(vm: vm)
+            }
+            .sheet(item: $decoratingBlock) { block in
+                DecorationPickerView(block: block) { deco in
+                    vm.setDecoration(blockId: block.id, decoration: deco)
+                    // refresh the block reference so the picker shows updated state
+                    decoratingBlock = nil
+                }
             }
             .fileImporter(
                 isPresented: $showFilePicker,
@@ -218,6 +231,18 @@ struct ContentView: View {
                     .foregroundColor(canZoomIn ? .primary : .secondary.opacity(0.3))
             }.disabled(!canZoomIn)
 
+            // Decorate mode toggle
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    decorateMode.toggle()
+                    if decorateMode { movingBlockId = nil }
+                }
+            }) {
+                Image(systemName: decorateMode ? "paintbrush.fill" : "paintbrush")
+                    .font(.system(size: 18))
+                    .foregroundColor(decorateMode ? .orange : .secondary)
+            }
+
             Spacer()
 
             if movingBlockId != nil {
@@ -230,6 +255,17 @@ struct ContentView: View {
                 .background(Color(red:0.90,green:0.97,blue:0.90)).cornerRadius(99)
                 Button(action: { movingBlockId = nil }) {
                     Text("Cancel").font(.caption).foregroundColor(.secondary)
+                }
+            } else if decorateMode {
+                HStack(spacing: 6) {
+                    Image(systemName: "paintbrush.fill").font(.caption)
+                    Text("Tap a house").font(.caption)
+                }
+                .foregroundColor(.orange)
+                .padding(.horizontal, 10).padding(.vertical, 4)
+                .background(Color.orange.opacity(0.12)).cornerRadius(99)
+                Button(action: { withAnimation { decorateMode = false } }) {
+                    Text("Done").font(.caption).foregroundColor(.secondary)
                 }
             } else {
                 Text("\(vm.blocks.count) homes")
@@ -264,6 +300,7 @@ struct ContentView: View {
                         cols: cfg.cols,
                         vm: vm,
                         movingBlockId: $movingBlockId,
+                        decorateMode: decorateMode,
                         onCellTap: handleCellTap
                     )
                     .padding(.horizontal, 16)
@@ -284,6 +321,59 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(Color.mapGrass)
+    }
+}
+
+// MARK: - Decoration Picker
+
+struct DecorationPickerView: View {
+    let block: Block
+    let onSelect: (String?) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private let options = ["🌳","🌸","🌻","🌿","🚗","🚲","📪","⛩️","🪧","🏮","💧","🪨"]
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+                    ForEach(options, id: \.self) { emoji in
+                        Button(action: { onSelect(emoji); dismiss() }) {
+                            Text(emoji)
+                                .font(.system(size: 36))
+                                .frame(width: 72, height: 72)
+                                .background(block.decoration == emoji
+                                    ? Color.orange.opacity(0.18)
+                                    : Color(.systemGray6))
+                                .overlay(RoundedRectangle(cornerRadius: 14)
+                                    .stroke(block.decoration == emoji ? Color.orange : Color.clear, lineWidth: 2))
+                                .cornerRadius(14)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                if block.decoration != nil {
+                    Button(role: .destructive, action: { onSelect(nil); dismiss() }) {
+                        Label("Remove Decoration", systemImage: "trash")
+                            .font(.callout)
+                    }
+                    .padding(.top, 4)
+                }
+
+                Spacer()
+            }
+            .padding(.top, 20)
+            .navigationTitle("Decorate \(block.houseName)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }
 

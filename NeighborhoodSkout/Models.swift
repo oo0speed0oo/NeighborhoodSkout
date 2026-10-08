@@ -160,11 +160,12 @@ struct Block: Identifiable, Codable, Equatable {
     var col: Int
     var residents: [Person]
     var lastModified: Date
+    var decoration: String?
 
     init(id: UUID = UUID(), houseName: String, colorName: String, icon: String,
-         gridIndex: Int, row: Int, col: Int, lastModified: Date = Date()) {
+         gridIndex: Int, row: Int, col: Int, lastModified: Date = Date(), decoration: String? = nil) {
         self.id = id; self.houseName = houseName; self.colorName = colorName
         self.icon = icon; self.gridIndex = gridIndex; self.row = row; self.col = col
-        self.residents = []; self.lastModified = lastModified
+        self.residents = []; self.lastModified = lastModified; self.decoration = decoration
     }
 }

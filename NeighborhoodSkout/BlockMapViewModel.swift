@@ -320,6 +320,12 @@ class BlockMapViewModel: ObservableObject {
 
     func deleteBlock(id: UUID) { blocks.removeAll { $0.id == id } }
 
+    func setDecoration(blockId: UUID, decoration: String?) {
+        guard let idx = blocks.firstIndex(where: { $0.id == blockId }) else { return }
+        blocks[idx].decoration  = decoration
+        blocks[idx].lastModified = Date()
+    }
+
     func addResident(to blockId: UUID, person: Person) {
         guard let idx = blocks.firstIndex(where: { $0.id == blockId }) else { return }
         blocks[idx].residents.append(person)
