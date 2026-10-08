@@ -79,6 +79,8 @@ struct PersonFormView: View {
                             role:      role,
                             lineId:    Self.cleanLineId(lineId)
                         )
+                        // Ask for notification permission the first time a birthday is saved
+                        BirthdayNotificationManager.shared.requestPermissionIfNeeded()
                         onSave(p)
                         dismiss()
                     }

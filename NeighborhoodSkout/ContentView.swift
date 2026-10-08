@@ -33,6 +33,28 @@ struct ContentView: View {
     let cellGap:     CGFloat = 3
     let gridSpacing: CGFloat = 20
 
+    func fireTestNotification() {
+        let mgr = BirthdayNotificationManager.shared
+        mgr.requestPermissionIfNeeded { granted in
+            guard granted else {
+                vm.showMessage("⚠️ Notifications are off — enable them in Settings")
+                return
+            }
+            // Use the first resident found, or a placeholder
+            if let block = vm.blocks.first(where: { !$0.residents.isEmpty }),
+               let person = block.residents.first {
+                let streetName = vm.streets.indices.contains(block.gridIndex)
+                    ? vm.streets[block.gridIndex].name : "your street"
+                let age = Calendar.current.dateComponents([.year], from: person.birthday, to: Date()).year ?? 0
+                mgr.fireTestNotification(firstName: person.firstName, streetName: streetName, age: age + 1)
+                vm.showMessage("📲 Test notification fires in 5 s — lock screen or background the app")
+            } else {
+                mgr.fireTestNotification(firstName: "Neighbor", streetName: "Oak Ave", age: 30)
+                vm.showMessage("📲 Test notification fires in 5 s (no residents yet — using placeholder)")
+            }
+        }
+    }
+
     func handleCellTap(gridIndex: Int, row: Int, col: Int) {
         guard vm.isHouseable(gridIndex: gridIndex, row: row, col: col) else { return }
         let tappedBlock = vm.block(gridIndex: gridIndex, row: row, col: col)
@@ -112,6 +134,10 @@ struct ContentView: View {
                         }
                         Button(action: { showImportSheet = true }) {
                             Label("Import from URL", systemImage: "square.and.arrow.down")
+                        }
+                        Divider()
+                        Button(action: { fireTestNotification() }) {
+                            Label("Test Birthday Alert", systemImage: "bell.badge")
                         }
                     } label: {
                         Image(systemName: "plus")

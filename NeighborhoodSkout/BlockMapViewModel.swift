@@ -32,6 +32,7 @@ class BlockMapViewModel: ObservableObject {
 
     init() {
         autoLoadOnLaunch()
+        BirthdayNotificationManager.shared.scheduleAll(blocks: blocks, streets: streets)
         // Save whenever the app moves to the background — covers force-quit and suspend
         NotificationCenter.default.addObserver(
             forName: UIApplication.willResignActiveNotification,
@@ -39,6 +40,10 @@ class BlockMapViewModel: ObservableObject {
         ) { [weak self] _ in
             self?.forceSave()
         }
+    }
+
+    private func scheduleNotifications() {
+        BirthdayNotificationManager.shared.scheduleAll(blocks: blocks, streets: streets)
     }
 
     // MARK: - Auto load on launch
@@ -213,6 +218,7 @@ class BlockMapViewModel: ObservableObject {
         blocks = merged
         isSaving = false
         saveAll()
+        scheduleNotifications()
         showMessage("✅ \(preview.summary)")
     }
 
@@ -222,6 +228,7 @@ class BlockMapViewModel: ObservableObject {
         if let existing { StoreManager.makeBackup(of: existing) }
         applyStore(NeighborhoodStore(streets: preview.importedStreets, blocks: preview.allImportedBlocks))
         saveAll()
+        scheduleNotifications()
         showMessage("✅ Replaced with \(preview.allImportedBlocks.count) houses")
     }
 
@@ -384,12 +391,14 @@ class BlockMapViewModel: ObservableObject {
         guard let idx = blocks.firstIndex(where: { $0.id == blockId }) else { return }
         blocks[idx].residents.append(person)
         blocks[idx].lastModified = Date()
+        scheduleNotifications()
     }
 
     func removeResident(from blockId: UUID, personId: UUID) {
         guard let idx = blocks.firstIndex(where: { $0.id == blockId }) else { return }
         blocks[idx].residents.removeAll { $0.id == personId }
         blocks[idx].lastModified = Date()
+        scheduleNotifications()
     }
 
     func updateResident(in blockId: UUID, person: Person) {
@@ -402,6 +411,7 @@ class BlockMapViewModel: ObservableObject {
         blocks[bIdx].lastModified    = Date()
         isSaving = false
         saveAll()
+        scheduleNotifications()
     }
 
     // MARK: - Message
