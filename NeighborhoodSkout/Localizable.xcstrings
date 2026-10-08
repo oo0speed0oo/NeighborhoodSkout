@@ -1,0 +1,580 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ from %@ turns %d today." : {
+      "comment" : "Birthday notification body. Args: firstName, streetName, age",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%2$@の%1$@さんが今日%3$d歳になりました。" } }
+      }
+    },
+    "%@ from %@ turns %d tomorrow." : {
+      "comment" : "Birthday eve notification body. Args: firstName, streetName, age",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%2$@の%1$@さんが明日%3$d歳になります。" } }
+      }
+    },
+    "%lld homes" : {
+      "comment" : "Number of houses shown in the zoom bar",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld棟" } }
+      }
+    },
+    "%lld residents" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld人" } }
+      }
+    },
+    "🎂 Birthday" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "🎂 誕生日" } }
+      }
+    },
+    "🎂 Birthday (Test)" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "🎂 誕生日（テスト）" } }
+      }
+    },
+    "🎂 Birthday Tomorrow" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "🎂 明日は誕生日" } }
+      }
+    },
+    "👥 Residents" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "👥 居住者" } }
+      }
+    },
+    "💬 Message on LINE" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "💬 LINEで連絡" } }
+      }
+    },
+    "✏️ Rename House" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "✏️ 家の名前を変更" } }
+      }
+    },
+    "A backup will be made first. Your current streets, houses, and resident info will be replaced." : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まずバックアップを作成します。現在の通り、家、居住者情報がすべて置き換わります。" } }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "追加" } }
+      }
+    },
+    "Add Home" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "家を追加" } }
+      }
+    },
+    "Add House Photo" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "家の写真を追加" } }
+      }
+    },
+    "Add Photo" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を追加" } }
+      }
+    },
+    "Add Resident" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "居住者を追加" } }
+      }
+    },
+    "Add Street" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "通りを追加" } }
+      }
+    },
+    "Already up to date · %lld unchanged" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すでに最新です · %lld件 変更なし" } }
+      }
+    },
+    "Are you sure you want to remove this person?" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この人を削除してもよろしいですか？" } }
+      }
+    },
+    "Birthday" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "誕生日" } }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル" } }
+      }
+    },
+    "Change Photo" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を変更" } }
+      }
+    },
+    "Chat" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャット" } }
+      }
+    },
+    "Child" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "子ども" } }
+      }
+    },
+    "Children" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "子ども達" } }
+      }
+    },
+    "Cul-de-sac" : {
+      "comment" : "Street template name",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "袋小路" } }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "削除" } }
+      }
+    },
+    "Details" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "詳細" } }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了" } }
+      }
+    },
+    "e.g. Maple Street" : {
+      "comment" : "Placeholder for new street name field",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "例：桜通り" } }
+      }
+    },
+    "e.g. The Johnsons or 42 Maple St" : {
+      "comment" : "Placeholder for house rename field",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "例：山田家、桜町42番地" } }
+      }
+    },
+    "Each side of the street will have %lld house slots" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "通りの片側に%lld個の家のスロットがあります" } }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "編集" } }
+      }
+    },
+    "Edit Resident" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "居住者を編集" } }
+      }
+    },
+    "Enter their LINE ID to message them directly from the app" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アプリから直接メッセージするためにLINE IDを入力してください" } }
+      }
+    },
+    "Export CSV" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CSVを書き出す" } }
+      }
+    },
+    "Female" : {
+      "comment" : "Gender option",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "女性" } }
+      }
+    },
+    "First name" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "名（下の名前）" } }
+      }
+    },
+    "Gender" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "性別" } }
+      }
+    },
+    "Go to Residents and edit each person\nto add their LINE ID" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "居住者を開き、各ユーザーを編集してLINE IDを追加してください" } }
+      }
+    },
+    "Grandparent" : {
+      "comment" : "Family role",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "祖父母" } }
+      }
+    },
+    "Grandparents" : {
+      "comment" : "Family group section header in residents list",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "祖父母" } }
+      }
+    },
+    "House Name" : {
+      "comment" : "Alert title for renaming a house",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "家の名前" } }
+      }
+    },
+    "House Photo" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "家の写真" } }
+      }
+    },
+    "Houses Both Sides" : {
+      "comment" : "Street template name",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "両側に家" } }
+      }
+    },
+    "Houses Left Side" : {
+      "comment" : "Street template name",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "左側のみ" } }
+      }
+    },
+    "Houses on both sides of the road" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "道路の両側に家が並びます" } }
+      }
+    },
+    "Houses on both sides, no road divider" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "両側に家があり、中央道路なし" } }
+      }
+    },
+    "Houses on the left side only" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "左側のみに家があります" } }
+      }
+    },
+    "Houses on the right side only" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "右側のみに家があります" } }
+      }
+    },
+    "Houses Right Side" : {
+      "comment" : "Street template name",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "右側のみ" } }
+      }
+    },
+    "Import" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込む" } }
+      }
+    },
+    "Import & Replace" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込んで置き換える" } }
+      }
+    },
+    "Import from URL" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "URLから読み込む" } }
+      }
+    },
+    "Import Preview" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込みプレビュー" } }
+      }
+    },
+    "Import Template" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "テンプレートを読み込む" } }
+      }
+    },
+    "Importing…" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込み中…" } }
+      }
+    },
+    "Last name" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "姓（名字）" } }
+      }
+    },
+    "LINE ID (optional)" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "LINE ID（任意）" } }
+      }
+    },
+    "LINE ID copied to clipboard" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "LINE IDをコピーしました" } }
+      }
+    },
+    "Load Default Data" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "初期データを読み込む" } }
+      }
+    },
+    "Load from iCloud Drive" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "iCloud Driveから読み込む" } }
+      }
+    },
+    "Load from Local Storage" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "本体から読み込む" } }
+      }
+    },
+    "Male" : {
+      "comment" : "Gender option",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "男性" } }
+      }
+    },
+    "Merge Changes" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更を結合" } }
+      }
+    },
+    "Message on LINE" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "LINEで連絡" } }
+      }
+    },
+    "Move" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "移動" } }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前" } }
+      }
+    },
+    "Neighborhood Template" : {
+      "comment" : "ShareLink subject line for template sharing",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "近隣テンプレート" } }
+      }
+    },
+    "NeighborhoodSkout" : {
+      "comment" : "App name used as navigation title",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "NeighborhoodSkout" } }
+      }
+    },
+    "New Street" : {
+      "comment" : "Fallback name when user leaves street name blank",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しい通り" } }
+      }
+    },
+    "No LINE IDs saved" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "LINE IDが保存されていません" } }
+      }
+    },
+    "No residents yet" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まだ居住者がいません" } }
+      }
+    },
+    "Nothing to import" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込むデータがありません" } }
+      }
+    },
+    "Number of houses per side: %lld" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "片側の家の数：%lld" } }
+      }
+    },
+    "Optional photo for this house" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この家の写真（任意）" } }
+      }
+    },
+    "Other" : {
+      "comment" : "Gender or family role option",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "その他" } }
+      }
+    },
+    "Others" : {
+      "comment" : "Family group section header for Other role",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "その他" } }
+      }
+    },
+    "Parent" : {
+      "comment" : "Family role",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "親" } }
+      }
+    },
+    "Parents" : {
+      "comment" : "Family group section header",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "親" } }
+      }
+    },
+    "Paste the URL your neighbor shared. This replaces your map layout — personal resident info is never imported." : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "近隣の方が共有したURLを貼り付けてください。マップのレイアウトが置き換わりますが、個人情報は読み込まれません。" } }
+      }
+    },
+    "Photo" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真" } }
+      }
+    },
+    "Preview" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プレビュー" } }
+      }
+    },
+    "Ready to import" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込む準備ができました" } }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "削除" } }
+      }
+    },
+    "Remove Decoration" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "デコレーションを削除" } }
+      }
+    },
+    "Remove Photo" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を削除" } }
+      }
+    },
+    "Remove Resident" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "居住者を削除" } }
+      }
+    },
+    "Remove Street" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "通りを削除" } }
+      }
+    },
+    "Replace all data?" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべてのデータを置き換えますか？" } }
+      }
+    },
+    "Replace All" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべて置き換え" } }
+      }
+    },
+    "Replace your map?" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "マップを置き換えますか？" } }
+      }
+    },
+    "Role in family" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "家族内の役割" } }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+      }
+    },
+    "Share Template" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "テンプレートを共有" } }
+      }
+    },
+    "Street Layout" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "通りのレイアウト" } }
+      }
+    },
+    "Street Name" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "通りの名前" } }
+      }
+    },
+    "Street name" : {
+      "comment" : "Placeholder text in the inline street name editor",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "通りの名前" } }
+      }
+    },
+    "Tap + to add the people who live here" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "＋をタップして居住者を追加" } }
+      }
+    },
+    "Tap a house" : {
+      "comment" : "Status text in decorate mode",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "家をタップ" } }
+      }
+    },
+    "Tap green to place" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "緑をタップして配置" } }
+      }
+    },
+    "Tap to add a photo" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "タップして写真を追加" } }
+      }
+    },
+    "Tap to change" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "タップして変更" } }
+      }
+    },
+    "Template URL" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "テンプレートURL" } }
+      }
+    },
+    "Test Birthday Alert" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "誕生日通知をテスト" } }
+      }
+    },
+    "This file has no house IDs so a smart merge isn't possible. You can only replace all current data." : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このファイルには家のIDがないため、スマートな結合はできません。現在のデータ全体を置き換えることのみ可能です。" } }
+      }
+    },
+    "This will remove the street and all houses on it." : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この通りとその上の家をすべて削除します。" } }
+      }
+    },
+    "This will replace your current streets and houses with the template. Your resident info will be cleared." : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "現在の通りと家がテンプレートで置き換わります。居住者情報は削除されます。" } }
+      }
+    },
+    "Import this into NeighborhoodSkout to get our neighborhood map." : {
+      "comment" : "ShareLink message body for template sharing",
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "NeighborhoodSkoutに読み込んで近隣マップを取得してください。" } }
+      }
+    },
+    "Zoom" : {
+      "localizations" : {
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ズーム" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

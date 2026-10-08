@@ -1,30 +1,82 @@
 import SwiftUI
 
-// MARK: - Grid Layout Rules
-// Each grid defines which columns are valid house positions
-// col 0 = left, col 1 = middle, col 2 = right
+// MARK: - Street Layout Templates
 
-enum GridLayout {
-    case leftAndRight   // Grid 1 & 3: houses on col 0 and col 2, col 1 is road
-    case rightOnly      // Grid 2: houses on col 2 only, col 0 and col 1 are road
+enum StreetTemplate: String, Codable, CaseIterable {
+    case bothSides  = "Houses Both Sides"
+    case leftOnly   = "Houses Left Side"
+    case rightOnly  = "Houses Right Side"
+    case culDeSac   = "Cul-de-sac"
 
-    func isHouseable(col: Int) -> Bool {
+    var icon: String {
         switch self {
-        case .leftAndRight: return col == 0 || col == 2
-        case .rightOnly:    return col == 2
+        case .bothSides: return "🏘"
+        case .leftOnly:  return "🏠"
+        case .rightOnly: return "🏡"
+        case .culDeSac:  return "🔵"
         }
     }
 
-    func isRoad(col: Int) -> Bool {
-        return !isHouseable(col: col)
+    var description: String {
+        switch self {
+        case .bothSides: return "Houses on both sides of the road"
+        case .leftOnly:  return "Houses on the left side only"
+        case .rightOnly: return "Houses on the right side only"
+        case .culDeSac:  return "Houses on both sides, no road divider"
+        }
+    }
+
+    func makeConfig(rows: Int = 5) -> GridConfig {
+        switch self {
+        case .bothSides:
+            return GridConfig(rows: rows, cols: 3, houseableCols: [0, 2], roadCols: [1], extraHouseableCells: [])
+        case .leftOnly:
+            return GridConfig(rows: rows, cols: 3, houseableCols: [0], roadCols: [1, 2], extraHouseableCells: [])
+        case .rightOnly:
+            return GridConfig(rows: rows, cols: 3, houseableCols: [2], roadCols: [0, 1], extraHouseableCells: [])
+        case .culDeSac:
+            return GridConfig(rows: rows, cols: 2, houseableCols: [0, 1], roadCols: [], extraHouseableCells: [])
+        }
     }
 }
 
-let gridLayouts: [GridLayout] = [
-    .leftAndRight,  // Grid 0
-    .rightOnly,     // Grid 1
-    .leftAndRight   // Grid 2
-]
+// MARK: - Street
+
+struct Street: Identifiable, Codable, Equatable {
+    let id: UUID
+    var name: String
+    var template: StreetTemplate
+    var rows: Int
+    var lastModified: Date
+
+    init(id: UUID = UUID(), name: String, template: StreetTemplate, rows: Int = 5, lastModified: Date = Date()) {
+        self.id = id; self.name = name; self.template = template; self.rows = rows; self.lastModified = lastModified
+    }
+
+    var config: GridConfig { template.makeConfig(rows: rows) }
+}
+
+// MARK: - GridConfig (built dynamically from Street)
+
+struct GridConfig {
+    let rows: Int
+    let cols: Int
+    let houseableCols: Set<Int>
+    let roadCols: Set<Int>
+    let extraHouseableCells: Set<String>
+
+    func isHouseable(row: Int, col: Int) -> Bool {
+        if extraHouseableCells.contains("\(row)-\(col)") { return true }
+        return houseableCols.contains(col)
+    }
+    func isRoad(row: Int, col: Int) -> Bool {
+        if isHouseable(row: row, col: col) { return false }
+        return roadCols.contains(col)
+    }
+    func isBlank(row: Int, col: Int) -> Bool {
+        !isHouseable(row: row, col: col) && !isRoad(row: row, col: col)
+    }
+}
 
 // MARK: - Person
 
@@ -35,18 +87,15 @@ struct Person: Identifiable, Codable, Equatable {
     var gender: Gender
     var birthday: Date
     var role: FamilyRole
+    var lineId: String
+    var lastModified: Date
 
     enum Gender: String, Codable, CaseIterable {
         case male   = "Male"
         case female = "Female"
         case other  = "Other"
-
         var icon: String {
-            switch self {
-            case .male:   return "👨"
-            case .female: return "👩"
-            case .other:  return "🧑"
-            }
+            switch self { case .male: return "👨"; case .female: return "👩"; case .other: return "🧑" }
         }
         var color: Color {
             switch self {
@@ -69,7 +118,6 @@ struct Person: Identifiable, Codable, Equatable {
         case parent      = "Parent"
         case child       = "Child"
         case other       = "Other"
-
         var icon: String {
             switch self {
             case .grandparent: return "👴"
@@ -81,42 +129,71 @@ struct Person: Identifiable, Codable, Equatable {
     }
 
     init(id: UUID = UUID(), firstName: String, lastName: String,
-         gender: Gender, birthday: Date, role: FamilyRole) {
-        self.id        = id
-        self.firstName = firstName
-        self.lastName  = lastName
-        self.gender    = gender
-        self.birthday  = birthday
-        self.role      = role
+         gender: Gender, birthday: Date, role: FamilyRole, lineId: String = "",
+         lastModified: Date = Date()) {
+        self.id = id; self.firstName = firstName; self.lastName = lastName
+        self.gender = gender; self.birthday = birthday; self.role = role
+        self.lineId = lineId; self.lastModified = lastModified
     }
 
-    var age: Int {
-        Calendar.current.dateComponents([.year], from: birthday, to: Date()).year ?? 0
-    }
+    var age: Int { Calendar.current.dateComponents([.year], from: birthday, to: Date()).year ?? 0 }
     var fullName: String { "\(firstName) \(lastName)" }
+}
+
+// MARK: - Neighborhood Data (import / export envelope for template sharing)
+// streets carries the full Street layout; blocks are stripped of residents on export.
+
+struct NeighborhoodData: Codable {
+    var streets: [Street]
+    var blocks: [Block]
+}
+
+// MARK: - Import Preview (Step 4)
+
+struct ImportPreview {
+    let newBlocks:          [Block]
+    let updatedBlocks:      [Block]
+    let unchangedCount:     Int
+    let newPeopleCount:     Int
+    let updatedPeopleCount: Int
+    let importedStreets:    [Street]
+    let allImportedBlocks:  [Block]   // full imported set, used by Replace All
+    let canMerge:           Bool      // false for old-format (no UUIDs)
+
+    var hasChanges: Bool { !newBlocks.isEmpty || !updatedBlocks.isEmpty }
+
+    var summary: String {
+        var parts: [String] = []
+        if newBlocks.count > 0      { parts.append("\(newBlocks.count) new \(newBlocks.count == 1 ? "house" : "houses")") }
+        if updatedBlocks.count > 0  { parts.append("\(updatedBlocks.count) updated") }
+        if newPeopleCount > 0       { parts.append("\(newPeopleCount) new \(newPeopleCount == 1 ? "person" : "people")") }
+        if updatedPeopleCount > 0   { parts.append("\(updatedPeopleCount) updated \(updatedPeopleCount == 1 ? "person" : "people")") }
+        if parts.isEmpty {
+            return unchangedCount > 0 ? "Already up to date · \(unchangedCount) unchanged" : "Nothing to import"
+        }
+        if unchangedCount > 0 { parts.append("\(unchangedCount) unchanged") }
+        return parts.joined(separator: " · ")
+    }
 }
 
 // MARK: - Block
 
 struct Block: Identifiable, Codable, Equatable {
     let id: UUID
-    var houseName: String       // free text e.g. "The Johnsons" or "42 Maple St"
+    var houseName: String
     var colorName: String
     var icon: String
     var gridIndex: Int
     var row: Int
     var col: Int
     var residents: [Person]
+    var lastModified: Date
+    var decoration: String?
 
     init(id: UUID = UUID(), houseName: String, colorName: String, icon: String,
-         gridIndex: Int, row: Int, col: Int) {
-        self.id        = id
-        self.houseName = houseName
-        self.colorName = colorName
-        self.icon      = icon
-        self.gridIndex = gridIndex
-        self.row       = row
-        self.col       = col
-        self.residents = []
+         gridIndex: Int, row: Int, col: Int, lastModified: Date = Date(), decoration: String? = nil) {
+        self.id = id; self.houseName = houseName; self.colorName = colorName
+        self.icon = icon; self.gridIndex = gridIndex; self.row = row; self.col = col
+        self.residents = []; self.lastModified = lastModified; self.decoration = decoration
     }
 }

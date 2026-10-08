@@ -1,6 +1,13 @@
 import SwiftUI
 
 extension Color {
+    // Grass background for the map — adapts to dark mode
+    static let mapGrass = Color(UIColor { tc in
+        tc.userInterfaceStyle == .dark
+            ? UIColor(red: 0.14, green: 0.24, blue: 0.12, alpha: 1)
+            : UIColor(red: 0.52, green: 0.76, blue: 0.38, alpha: 1)
+    })
+
     static func blockBackground(_ n: String) -> Color {
         switch n {
         case "purple": return Color(red:0.93,green:0.93,blue:0.996)
