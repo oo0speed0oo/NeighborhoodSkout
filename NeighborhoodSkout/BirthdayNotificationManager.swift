@@ -93,16 +93,22 @@ final class BirthdayNotificationManager {
             let age = ageAt(birthday: entry.birthday, on: entry.nextDate)
 
             // Same-day notification
+            let todayBody = String(format: NSLocalizedString("%@ from %@ turns %d today.",
+                                                              comment: "Birthday notification body"),
+                                   entry.firstName, entry.streetName, age)
             schedule(id:      "bday-\(entry.personId.uuidString)-today",
-                     title:   "🎂 Birthday",
-                     body:    "\(entry.firstName) from \(entry.streetName) turns \(age) today.",
+                     title:   NSLocalizedString("🎂 Birthday", comment: "Birthday notification title"),
+                     body:    todayBody,
                      on:      entry.nextDate)
 
             if dayBefore {
-                let eve = entry.nextDate.addingTimeInterval(-86400)
+                let eve     = entry.nextDate.addingTimeInterval(-86400)
+                let eveBody = String(format: NSLocalizedString("%@ from %@ turns %d tomorrow.",
+                                                               comment: "Birthday eve notification body"),
+                                     entry.firstName, entry.streetName, age)
                 schedule(id:      "bday-\(entry.personId.uuidString)-eve",
-                         title:   "🎂 Birthday Tomorrow",
-                         body:    "\(entry.firstName) from \(entry.streetName) turns \(age) tomorrow.",
+                         title:   NSLocalizedString("🎂 Birthday Tomorrow", comment: "Birthday eve notification title"),
+                         body:    eveBody,
                          on:      eve)
             }
         }
@@ -123,8 +129,10 @@ final class BirthdayNotificationManager {
 
     func fireTestNotification(firstName: String, streetName: String, age: Int) {
         let content   = UNMutableNotificationContent()
-        content.title = "🎂 Birthday (Test)"
-        content.body  = "\(firstName) from \(streetName) turns \(age) today."
+        content.title = NSLocalizedString("🎂 Birthday (Test)", comment: "Test notification title")
+        content.body  = String(format: NSLocalizedString("%@ from %@ turns %d today.",
+                                                          comment: "Birthday notification body"),
+                               firstName, streetName, age)
         content.sound = .default
         let trigger   = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
         let request   = UNNotificationRequest(identifier: "bday-test-\(UUID().uuidString)",
