@@ -23,6 +23,7 @@ struct ContentView: View {
     @State private var exportURL:             URL?   = nil
     @State private var importPreview:         ImportPreview? = nil
     @State private var showImportPreview      = false
+    @State private var showSettings           = false
 
     // Zoom
     @State private var zoomLevel: Int = 3
@@ -95,11 +96,16 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        exportURL = vm.exportCSVURL()
-                        showExportSheet = true
-                    }) {
-                        Label("Export CSV", systemImage: "square.and.arrow.up")
+                    HStack(spacing: 4) {
+                        Button(action: { showSettings = true }) {
+                            Image(systemName: "gear")
+                        }
+                        Button(action: {
+                            exportURL = vm.exportCSVURL()
+                            showExportSheet = true
+                        }) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -192,6 +198,9 @@ struct ContentView: View {
                         showImportPreview = false
                     }
                 }
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView(vm: vm)
             }
             // Residents page
             .navigationDestination(isPresented: Binding(

@@ -414,6 +414,22 @@ class BlockMapViewModel: ObservableObject {
         scheduleNotifications()
     }
 
+    // MARK: - Backup restore
+
+    func restoreBackup(from url: URL) {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let data  = try? Data(contentsOf: url),
+              let store = try? decoder.decode(NeighborhoodStore.self, from: data) else {
+            showMessage("⚠️ Could not read backup"); return
+        }
+        if let current = StoreManager.load() { StoreManager.makeBackup(of: current) }
+        applyStore(store)
+        saveAll()
+        scheduleNotifications()
+        showMessage("✅ Restored — \(blocks.count) homes loaded")
+    }
+
     // MARK: - Message
 
     func showMessage(_ msg: String) {
