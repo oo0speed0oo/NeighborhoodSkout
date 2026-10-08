@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct ResidentsView: View {
     @ObservedObject var vm: BlockMapViewModel
@@ -9,6 +10,9 @@ struct ResidentsView: View {
     @State private var editingPerson: Person? = nil
     @State private var showDeleteAlert = false
     @State private var deletingId: UUID? = nil
+
+    @State private var housePickerItem: PhotosPickerItem? = nil
+    @State private var housePhoto: UIImage? = nil
 
     var block: Block?       { vm.blocks.first { $0.id == blockId } }
     var residents: [Person] { block?.residents ?? [] }
@@ -45,6 +49,17 @@ struct ResidentsView: View {
         .sheet(item: $editingPerson) { person in
             PersonFormView(existing: person) { updated in vm.updateResident(in: blockId, person: updated) }
         }
+        .onAppear { housePhoto = PhotoStore.load(PhotoStore.houseURL(blockId)) }
+        .onChange(of: housePickerItem) { item in
+            Task {
+                guard let item else { return }
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    PhotoStore.save(image, to: PhotoStore.houseURL(blockId))
+                    await MainActor.run { housePhoto = PhotoStore.load(PhotoStore.houseURL(blockId)) }
+                }
+            }
+        }
         .alert("Remove Resident", isPresented: $showDeleteAlert) {
             Button("Remove", role: .destructive) {
                 if let id = deletingId { vm.removeResident(from: blockId, personId: id) }
@@ -55,8 +70,49 @@ struct ResidentsView: View {
         }
     }
 
+    var housePhotoHeader: some View {
+        HStack(spacing: 14) {
+            PhotosPicker(selection: $housePickerItem, matching: .images) {
+                Group {
+                    if let img = housePhoto {
+                        Image(uiImage: img)
+                            .resizable().scaledToFill()
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color(.separator).opacity(0.4), lineWidth: 0.5))
+                    } else {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color(.systemGray5))
+                            .frame(width: 64, height: 64)
+                            .overlay(Image(systemName: "camera.badge.plus")
+                                .font(.title2).foregroundColor(.secondary))
+                    }
+                }
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(housePhoto != nil ? "House Photo" : "Add House Photo")
+                    .font(.subheadline).fontWeight(.medium)
+                Text(housePhoto != nil ? "Tap to change" : "Optional photo for this house")
+                    .font(.caption).foregroundColor(.secondary)
+                if housePhoto != nil {
+                    Button("Remove") {
+                        PhotoStore.delete(PhotoStore.houseURL(blockId))
+                        housePhoto = nil
+                    }
+                    .font(.caption).foregroundColor(.red)
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 4)
+    }
+
     var emptyState: some View {
         VStack(spacing: 16) {
+            housePhotoHeader
+            Divider().padding(.horizontal, 20)
+            Spacer()
             Text("🏠").font(.system(size: 52))
             Text("No residents yet").font(.title3).fontWeight(.medium)
             Text("Tap + to add the people who live here")
@@ -68,6 +124,7 @@ struct ResidentsView: View {
                     .background(Color.accentColor).foregroundColor(.white).cornerRadius(99)
             }
             .padding(.top, 8)
+            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -75,12 +132,13 @@ struct ResidentsView: View {
     var residentsList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                housePhotoHeader
                 HStack {
                     Label("\(residents.count) resident\(residents.count == 1 ? "" : "s")", systemImage: "person.2")
                         .font(.caption).foregroundColor(.secondary)
                     Spacer()
                 }
-                .padding(.horizontal, 20).padding(.top, 12)
+                .padding(.horizontal, 20)
 
                 ForEach(grouped, id: \.0) { groupName, people in
                     VStack(alignment: .leading, spacing: 10) {
@@ -119,7 +177,8 @@ struct ResidentsView: View {
 
 struct PersonRowView: View {
     let person: Person
-    @State private var showCopied = false
+    @State private var showCopied  = false
+    @State private var personPhoto: UIImage? = nil
 
     private let dateFormatter: DateFormatter = {
         let f = DateFormatter(); f.dateStyle = .medium; f.timeStyle = .none; return f
@@ -128,11 +187,18 @@ struct PersonRowView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                // Gender avatar
-                ZStack {
-                    Circle().fill(person.gender.color).frame(width: 46, height: 46)
+                // Avatar: person photo if available, else gender icon
+                if let img = personPhoto {
+                    Image(uiImage: img)
+                        .resizable().scaledToFill()
+                        .frame(width: 46, height: 46).clipShape(Circle())
                         .overlay(Circle().stroke(person.gender.borderColor, lineWidth: 1))
-                    Text(person.gender.icon).font(.system(size: 22))
+                } else {
+                    ZStack {
+                        Circle().fill(person.gender.color).frame(width: 46, height: 46)
+                            .overlay(Circle().stroke(person.gender.borderColor, lineWidth: 1))
+                        Text(person.gender.icon).font(.system(size: 22))
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -197,6 +263,7 @@ struct PersonRowView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: showCopied)
+        .onAppear { personPhoto = PhotoStore.load(PhotoStore.personURL(person.id)) }
     }
 
     private func openLine(id: String) {
