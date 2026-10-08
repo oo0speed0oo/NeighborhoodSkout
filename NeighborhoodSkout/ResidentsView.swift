@@ -119,6 +119,7 @@ struct ResidentsView: View {
 
 struct PersonRowView: View {
     let person: Person
+    @State private var showCopied = false
 
     private let dateFormatter: DateFormatter = {
         let f = DateFormatter(); f.dateStyle = .medium; f.timeStyle = .none; return f
@@ -185,16 +186,41 @@ struct PersonRowView: View {
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator).opacity(0.35), lineWidth: 0.5))
+        .overlay(alignment: .bottom) {
+            if showCopied {
+                Text("LINE ID copied to clipboard")
+                    .font(.caption).foregroundColor(.white)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Color(.label).opacity(0.8)).cornerRadius(99)
+                    .padding(.bottom, 8)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showCopied)
     }
 
     private func openLine(id: String) {
-        let lineURL = URL(string: "line://ti/p/~\(id)")!
+        // Strip any leading ~ the user may have typed (we add it in the URL)
+        let clean = PersonFormView.cleanLineId(id)
+        guard !clean.isEmpty, let lineURL = URL(string: "line://ti/p/~\(clean)") else {
+            copyFallback(clean.isEmpty ? id : clean); return
+        }
         UIApplication.shared.open(lineURL) { success in
-            if !success {
-                if let webURL = URL(string: "https://line.me/ti/p/~\(id)") {
-                    UIApplication.shared.open(webURL)
+            if success { return }
+            // Try the web redirect form as a second attempt
+            if let webURL = URL(string: "https://line.me/R/ti/p/~\(clean)") {
+                UIApplication.shared.open(webURL) { webSuccess in
+                    if !webSuccess { self.copyFallback(clean) }
                 }
+            } else {
+                self.copyFallback(clean)
             }
         }
+    }
+
+    private func copyFallback(_ id: String) {
+        UIPasteboard.general.string = id
+        showCopied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { showCopied = false }
     }
 }

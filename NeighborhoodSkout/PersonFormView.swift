@@ -77,7 +77,7 @@ struct PersonFormView: View {
                             gender:    gender,
                             birthday:  birthday,
                             role:      role,
-                            lineId:    lineId.trimmingCharacters(in: .whitespaces)
+                            lineId:    Self.cleanLineId(lineId)
                         )
                         onSave(p)
                         dismiss()
@@ -101,5 +101,12 @@ struct PersonFormView: View {
 
     private func ageFrom(_ date: Date) -> Int {
         Calendar.current.dateComponents([.year], from: date, to: Date()).year ?? 0
+    }
+
+    // Strip leading ~ that users sometimes type by mistake (we add it in the LINE URL)
+    static func cleanLineId(_ raw: String) -> String {
+        var s = raw.trimmingCharacters(in: .whitespaces)
+        while s.hasPrefix("~") { s = String(s.dropFirst()) }
+        return s
     }
 }

@@ -72,7 +72,8 @@ struct LineContactSheet: View {
 
 struct LinePersonCard: View {
     let person: Person
-    @State private var pressed = false
+    @State private var pressed     = false
+    @State private var showCopied  = false
 
     var body: some View {
         Button(action: { openLine(id: person.lineId) }) {
@@ -121,14 +122,39 @@ struct LinePersonCard: View {
                 .onChanged { _ in pressed = true }
                 .onEnded   { _ in pressed = false }
         )
+        .overlay(alignment: .bottom) {
+            if showCopied {
+                Text("LINE ID copied to clipboard")
+                    .font(.caption).foregroundColor(.white)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Color(.label).opacity(0.8)).cornerRadius(99)
+                    .padding(.bottom, 8)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showCopied)
     }
 
     private func openLine(id: String) {
-        let lineURL = URL(string: "line://ti/p/~\(id)")!
+        let clean = PersonFormView.cleanLineId(id)
+        guard !clean.isEmpty, let lineURL = URL(string: "line://ti/p/~\(clean)") else {
+            copyFallback(clean.isEmpty ? id : clean); return
+        }
         UIApplication.shared.open(lineURL) { success in
-            if !success, let webURL = URL(string: "https://line.me/ti/p/~\(id)") {
-                UIApplication.shared.open(webURL)
+            if success { return }
+            if let webURL = URL(string: "https://line.me/R/ti/p/~\(clean)") {
+                UIApplication.shared.open(webURL) { webSuccess in
+                    if !webSuccess { self.copyFallback(clean) }
+                }
+            } else {
+                self.copyFallback(clean)
             }
         }
+    }
+
+    private func copyFallback(_ id: String) {
+        UIPasteboard.general.string = id
+        showCopied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { showCopied = false }
     }
 }
