@@ -189,7 +189,7 @@ If any line between the two `isSaving` assignments returns early (the security-s
 
 **b) LINE force-unwrap crash.** `URL(string: "line://ti/p/~\(id)")!` crashes if `id` contains a space or special character. This is both a crash risk (Bug 1 cause) and a LINE connectivity bug.
 
-**Guess (unconfirmed, need Info.plist check):** `line` may be missing from `LSApplicationQueriesSchemes`. Without it, `UIApplication.shared.open` silently fails for the LINE URL and falls back to the web URL. The web URL may work, but it opens in Safari, not LINE.
+**Confirmed (checked Info.plist):** `line` IS in `LSApplicationQueriesSchemes`. This was a false alarm.
 
 **Guess (unconfirmed, need real device test):** LINE's URL scheme format. The form `line://ti/p/~ID` is documented but older. The form `https://line.me/R/ti/p/~ID` (note the `/R/`) may be more reliable on newer LINE versions.
 
@@ -227,7 +227,7 @@ If any line between the two `isSaving` assignments returns early (the security-s
 | No Application Support JSON (SPEC requirement missing) | **Confirmed** |
 | LINE force-unwrap crash if lineId has spaces/special chars | **Confirmed** |
 | LINE ID not sanitized (leading `~` or `@` doubles the prefix) | **Confirmed** |
-| `line` missing from `LSApplicationQueriesSchemes` | **Guess** — need to check Info.plist |
+| `line` present in `LSApplicationQueriesSchemes` | **Confirmed (false alarm)** — it's already there |
 | App "restarts" = crash triggered by LINE URL force-unwrap | **Guess** |
 | LINE URL scheme format changed (`/R/` variant more reliable) | **Guess** — need real device test |
 
