@@ -148,6 +148,34 @@ struct NeighborhoodData: Codable {
     var blocks: [Block]
 }
 
+// MARK: - Import Preview (Step 4)
+
+struct ImportPreview {
+    let newBlocks:          [Block]
+    let updatedBlocks:      [Block]
+    let unchangedCount:     Int
+    let newPeopleCount:     Int
+    let updatedPeopleCount: Int
+    let importedStreets:    [Street]
+    let allImportedBlocks:  [Block]   // full imported set, used by Replace All
+    let canMerge:           Bool      // false for old-format (no UUIDs)
+
+    var hasChanges: Bool { !newBlocks.isEmpty || !updatedBlocks.isEmpty }
+
+    var summary: String {
+        var parts: [String] = []
+        if newBlocks.count > 0      { parts.append("\(newBlocks.count) new \(newBlocks.count == 1 ? "house" : "houses")") }
+        if updatedBlocks.count > 0  { parts.append("\(updatedBlocks.count) updated") }
+        if newPeopleCount > 0       { parts.append("\(newPeopleCount) new \(newPeopleCount == 1 ? "person" : "people")") }
+        if updatedPeopleCount > 0   { parts.append("\(updatedPeopleCount) updated \(updatedPeopleCount == 1 ? "person" : "people")") }
+        if parts.isEmpty {
+            return unchangedCount > 0 ? "Already up to date · \(unchangedCount) unchanged" : "Nothing to import"
+        }
+        if unchangedCount > 0 { parts.append("\(unchangedCount) unchanged") }
+        return parts.joined(separator: " · ")
+    }
+}
+
 // MARK: - Block
 
 struct Block: Identifiable, Codable, Equatable {

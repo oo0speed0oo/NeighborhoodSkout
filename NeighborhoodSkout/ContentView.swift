@@ -19,6 +19,10 @@ struct ContentView: View {
     @State private var showImportSheet        = false
     @State private var decorateMode           = false
     @State private var decoratingBlock:       Block? = nil
+    @State private var showExportSheet        = false
+    @State private var exportURL:             URL?   = nil
+    @State private var importPreview:         ImportPreview? = nil
+    @State private var showImportPreview      = false
 
     // Zoom
     @State private var zoomLevel: Int = 3
@@ -69,8 +73,11 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { vm.saveToCSV() }) {
-                        Label("Save", systemImage: "square.and.arrow.up")
+                    Button(action: {
+                        exportURL = vm.exportCSVURL()
+                        showExportSheet = true
+                    }) {
+                        Label("Export CSV", systemImage: "square.and.arrow.up")
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -133,10 +140,31 @@ struct ContentView: View {
             ) { result in
                 switch result {
                 case .success(let urls):
-                    if let url = urls.first { vm.loadFromURL(url) }
+                    guard let url = urls.first else { return }
+                    if let preview = vm.previewCSVImport(from: url) {
+                        importPreview = preview
+                        showImportPreview = true
+                    } else {
+                        // Fallback: direct load (unrecognised format)
+                        vm.loadFromURL(url)
+                    }
                 case .failure(let error):
                     vm.csvLoadMessage = "⚠️ \(error.localizedDescription)"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) { vm.csvLoadMessage = nil }
+                }
+            }
+            .sheet(isPresented: $showExportSheet) {
+                if let url = exportURL {
+                    ActivitySheet(items: [url])
+                        .presentationDetents([.medium, .large])
+                }
+            }
+            .sheet(isPresented: $showImportPreview) {
+                if let preview = importPreview {
+                    ImportPreviewSheet(preview: preview, vm: vm) {
+                        importPreview = nil
+                        showImportPreview = false
+                    }
                 }
             }
             // Residents page
@@ -450,6 +478,101 @@ struct ImportTemplateView: View {
             }
         }
     }
+}
+
+// MARK: - Import Preview Sheet
+
+struct ImportPreviewSheet: View {
+    let preview:   ImportPreview
+    @ObservedObject var vm: BlockMapViewModel
+    let onDismiss: () -> Void
+
+    @State private var confirmReplaceAll = false
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Summary card
+                VStack(alignment: .leading, spacing: 12) {
+                    Label(preview.canMerge ? "Ready to import" : "Replace all data?",
+                          systemImage: preview.canMerge ? "square.and.arrow.down" : "exclamationmark.triangle")
+                        .font(.headline)
+                        .foregroundColor(preview.canMerge ? .primary : .orange)
+
+                    Text(preview.summary)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    if !preview.canMerge {
+                        Text("This file has no house IDs so a smart merge isn't possible. You can only replace all current data.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(20)
+
+                Spacer()
+
+                // Action buttons
+                VStack(spacing: 12) {
+                    if preview.canMerge {
+                        Button(action: {
+                            vm.applyMerge(preview)
+                            onDismiss(); dismiss()
+                        }) {
+                            Label("Merge Changes", systemImage: "arrow.triangle.merge")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                    }
+
+                    Button(role: .destructive, action: { confirmReplaceAll = true }) {
+                        Label("Replace All", systemImage: "arrow.clockwise")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+            .navigationTitle("Import Preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { onDismiss(); dismiss() }
+                }
+            }
+            .confirmationDialog("Replace all data?", isPresented: $confirmReplaceAll, titleVisibility: .visible) {
+                Button("Replace All", role: .destructive) {
+                    vm.replaceAll(preview)
+                    onDismiss(); dismiss()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("A backup will be made first. Your current streets, houses, and resident info will be replaced.")
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Activity Sheet (UIActivityViewController wrapper)
+
+import UIKit
+
+struct ActivitySheet: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview { ContentView() }

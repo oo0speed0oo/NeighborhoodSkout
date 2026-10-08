@@ -191,6 +191,186 @@ struct CSVManager {
 
     static var csvPath: String { csvURL.path }
 
+    // MARK: - V2 Export (UTF-8 BOM, UUIDs, lastModified, one row per person)
+
+    static let exportDir: URL = {
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        return caches.appendingPathComponent("NeighborhoodSkout", isDirectory: true)
+    }()
+
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    static func exportV2Data(blocks: [Block], streets: [Street]) -> Data {
+        var lines: [String] = []
+        lines.append("#STREET,StreetID,Name,Template,Rows,LastModified")
+        for s in streets {
+            lines.append("#STREET,\(s.id.uuidString),\(escape(s.name)),\(escape(s.template.rawValue)),\(s.rows),\(isoFormatter.string(from: s.lastModified))")
+        }
+        lines.append("HouseID,HouseName,StreetID,StreetName,GridIndex,Row,Col,ColorName,Icon,Decoration,PersonID,FirstName,LastName,Gender,Role,Birthday,LineID,HouseLastModified,PersonLastModified")
+        for block in blocks {
+            let streetId   = streets.indices.contains(block.gridIndex) ? streets[block.gridIndex].id.uuidString : ""
+            let streetName = streets.indices.contains(block.gridIndex) ? streets[block.gridIndex].name : ""
+            let deco       = block.decoration ?? ""
+            let houseMod   = isoFormatter.string(from: block.lastModified)
+            if block.residents.isEmpty {
+                let row = [block.id.uuidString, escape(block.houseName), streetId, escape(streetName),
+                           "\(block.gridIndex)", "\(block.row)", "\(block.col)",
+                           block.colorName, block.icon, escape(deco),
+                           "", "", "", "", "", "", "", houseMod, ""]
+                lines.append(row.joined(separator: ","))
+            } else {
+                for p in block.residents {
+                    let row = [block.id.uuidString, escape(block.houseName), streetId, escape(streetName),
+                               "\(block.gridIndex)", "\(block.row)", "\(block.col)",
+                               block.colorName, block.icon, escape(deco),
+                               p.id.uuidString, escape(p.firstName), escape(p.lastName),
+                               p.gender.rawValue, p.role.rawValue,
+                               dateFormatter.string(from: p.birthday),
+                               escape(p.lineId), houseMod,
+                               isoFormatter.string(from: p.lastModified)]
+                    lines.append(row.joined(separator: ","))
+                }
+            }
+        }
+        let content = lines.joined(separator: "\r\n")
+        let bom = Data([0xEF, 0xBB, 0xBF])
+        return bom + (content.data(using: .utf8) ?? Data())
+    }
+
+    // MARK: - V2 Parse
+
+    static func isV2Format(_ content: String) -> Bool {
+        let stripped = content.hasPrefix("\u{FEFF}") ? String(content.dropFirst()) : content
+        return stripped.components(separatedBy: .newlines).prefix(15).contains { $0.hasPrefix("HouseID,") }
+    }
+
+    static func parseV2(content: String) -> (blocks: [Block], streets: [Street])? {
+        var raw = content
+        if raw.hasPrefix("\u{FEFF}") { raw = String(raw.dropFirst()) }
+        let allLines = raw.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "\r")) }
+            .filter { !$0.isEmpty }
+        guard !allLines.isEmpty else { return nil }
+
+        var streets: [Street]    = []
+        var blockMap: [UUID: Block] = [:]
+        var inBlockSection = false
+
+        for line in allLines {
+            if line.hasPrefix("#STREET,") {
+                let cols = parseLine(line)
+                guard cols.count >= 5, let id = UUID(uuidString: cols[1]) else { continue }
+                let name     = unescape(cols[2])
+                let tmplRaw  = unescape(cols[3])
+                let rows     = Int(cols[4]) ?? 5
+                let lastMod  = cols.count >= 6 ? (isoFormatter.date(from: cols[5]) ?? Date()) : Date()
+                let template = StreetTemplate(rawValue: tmplRaw) ?? .bothSides
+                streets.append(Street(id: id, name: name, template: template, rows: rows, lastModified: lastMod))
+            } else if line.hasPrefix("HouseID,") {
+                inBlockSection = true
+            } else if inBlockSection {
+                let cols = parseLine(line)
+                // HouseID(0) HouseName(1) StreetID(2) StreetName(3) GridIndex(4) Row(5) Col(6)
+                // ColorName(7) Icon(8) Decoration(9) PersonID(10) FirstName(11) LastName(12)
+                // Gender(13) Role(14) Birthday(15) LineID(16) HouseMod(17) PersonMod(18)
+                guard cols.count >= 18, let houseId = UUID(uuidString: cols[0]) else { continue }
+                let houseName  = unescape(cols[1])
+                let gridIndex  = Int(cols[4]) ?? 0
+                let row        = Int(cols[5]) ?? 0
+                let col        = Int(cols[6]) ?? 0
+                let colorName  = cols[7]
+                let icon       = cols[8]
+                let deco       = unescape(cols[9])
+                let houseMod   = isoFormatter.date(from: cols[17]) ?? Date()
+
+                if blockMap[houseId] == nil {
+                    blockMap[houseId] = Block(id: houseId, houseName: houseName,
+                                              colorName: colorName, icon: icon,
+                                              gridIndex: gridIndex, row: row, col: col,
+                                              lastModified: houseMod,
+                                              decoration: deco.isEmpty ? nil : deco)
+                }
+                if cols.count >= 19,
+                   let personId = UUID(uuidString: cols[10]),
+                   !cols[11].isEmpty,
+                   let gender   = Person.Gender(rawValue: cols[13]),
+                   let role     = Person.FamilyRole(rawValue: cols[14]),
+                   let birthday = dateFormatter.date(from: cols[15]) {
+                    let lineId  = unescape(cols[16])
+                    let persMod = isoFormatter.date(from: cols[18]) ?? Date()
+                    let person  = Person(id: personId, firstName: unescape(cols[11]),
+                                         lastName: unescape(cols[12]),
+                                         gender: gender, birthday: birthday, role: role,
+                                         lineId: lineId, lastModified: persMod)
+                    blockMap[houseId]?.residents.append(person)
+                }
+            }
+        }
+        guard !streets.isEmpty else { return nil }
+        let blocks = blockMap.values.sorted {
+            if $0.gridIndex != $1.gridIndex { return $0.gridIndex < $1.gridIndex }
+            if $0.row != $1.row { return $0.row < $1.row }
+            return $0.col < $1.col
+        }
+        return (blocks: blocks, streets: streets)
+    }
+
+    // MARK: - Merge preview (v2: match by UUID, newest lastModified wins)
+
+    static func previewMerge(imported: (blocks: [Block], streets: [Street]),
+                             current:  (blocks: [Block], streets: [Street])) -> ImportPreview {
+        var newBlocks:         [Block] = []
+        var updatedBlocks:     [Block] = []
+        var unchangedCount             = 0
+        var newPeopleCount             = 0
+        var updatedPeopleCount         = 0
+
+        let currentById = Dictionary(uniqueKeysWithValues: current.blocks.map { ($0.id, $0) })
+
+        for importedBlock in imported.blocks {
+            if let existing = currentById[importedBlock.id] {
+                if importedBlock.lastModified > existing.lastModified {
+                    let existingPeopleById = Dictionary(uniqueKeysWithValues: existing.residents.map { ($0.id, $0) })
+                    for p in importedBlock.residents {
+                        if existingPeopleById[p.id] == nil { newPeopleCount += 1 }
+                        else if p.lastModified > (existingPeopleById[p.id]?.lastModified ?? .distantPast) { updatedPeopleCount += 1 }
+                    }
+                    // Merge: keep existing residents whose IDs aren't in the import
+                    var merged = importedBlock
+                    let importedPersonIds = Set(importedBlock.residents.map { $0.id })
+                    merged.residents = importedBlock.residents + existing.residents.filter { !importedPersonIds.contains($0.id) }
+                    updatedBlocks.append(merged)
+                } else {
+                    unchangedCount += 1
+                }
+            } else {
+                newBlocks.append(importedBlock)
+                newPeopleCount += importedBlock.residents.count
+            }
+        }
+
+        return ImportPreview(newBlocks: newBlocks, updatedBlocks: updatedBlocks,
+                             unchangedCount: unchangedCount,
+                             newPeopleCount: newPeopleCount, updatedPeopleCount: updatedPeopleCount,
+                             importedStreets: imported.streets,
+                             allImportedBlocks: imported.blocks, canMerge: true)
+    }
+
+    // MARK: - Replace preview (old format: no UUIDs, treat all as new)
+
+    static func previewReplace(imported: (blocks: [Block], streets: [Street])) -> ImportPreview {
+        let totalPeople = imported.blocks.reduce(0) { $0 + $1.residents.count }
+        return ImportPreview(newBlocks: imported.blocks, updatedBlocks: [],
+                             unchangedCount: 0,
+                             newPeopleCount: totalPeople, updatedPeopleCount: 0,
+                             importedStreets: imported.streets,
+                             allImportedBlocks: imported.blocks, canMerge: false)
+    }
+
     // MARK: - Helpers
 
     static func escape(_ s: String) -> String {

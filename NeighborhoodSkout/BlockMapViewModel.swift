@@ -171,6 +171,60 @@ class BlockMapViewModel: ObservableObject {
         saveAll()
     }
 
+    // MARK: - CSV Export (Step 4)
+
+    func exportCSVURL() -> URL {
+        let data = CSVManager.exportV2Data(blocks: blocks, streets: streets)
+        let dir  = CSVManager.exportDir
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url  = dir.appendingPathComponent("neighborhood_export.csv")
+        try? data.write(to: url)
+        return url
+    }
+
+    // MARK: - CSV Import preview (Step 4)
+    // Returns a preview for v2 (UUID-based merge) or v1 (replace) files, or nil if unparseable.
+
+    func previewCSVImport(from url: URL) -> ImportPreview? {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        guard let content = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        if CSVManager.isV2Format(content) {
+            guard let imported = CSVManager.parseV2(content: content) else { return nil }
+            return CSVManager.previewMerge(imported: imported, current: (blocks: blocks, streets: streets))
+        } else {
+            guard let imported = CSVManager.parse(content: content) else { return nil }
+            return CSVManager.previewReplace(imported: imported)
+        }
+    }
+
+    // Merge: update changed blocks/people, add new ones, keep everything else.
+    func applyMerge(_ preview: ImportPreview) {
+        let existing = StoreManager.load()
+        if let existing { StoreManager.makeBackup(of: existing) }
+        let updatedIds = Set(preview.updatedBlocks.map { $0.id })
+        var merged = blocks.filter { !updatedIds.contains($0.id) } + preview.updatedBlocks + preview.newBlocks
+        merged.sort {
+            if $0.gridIndex != $1.gridIndex { return $0.gridIndex < $1.gridIndex }
+            if $0.row != $1.row { return $0.row < $1.row }
+            return $0.col < $1.col
+        }
+        isSaving = true
+        blocks = merged
+        isSaving = false
+        saveAll()
+        showMessage("✅ \(preview.summary)")
+    }
+
+    // Replace All: back up, then replace streets + blocks entirely.
+    func replaceAll(_ preview: ImportPreview) {
+        let existing = StoreManager.load()
+        if let existing { StoreManager.makeBackup(of: existing) }
+        applyStore(NeighborhoodStore(streets: preview.importedStreets, blocks: preview.allImportedBlocks))
+        saveAll()
+        showMessage("✅ Replaced with \(preview.allImportedBlocks.count) houses")
+    }
+
     // MARK: - Save to CSV (manual, for sharing / iCloud sync)
 
     func saveToCSV() {
