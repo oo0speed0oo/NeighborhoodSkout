@@ -387,12 +387,12 @@ function showImportPreview(p) {
         return;
       }
       const rc = countsOf(p.replaceState);
-      body.append(h('div', { class: 'sumbox' }, h('div', { class: 'sumline' }, `${t('{0} houses', rc.houses)} · ${t('{0} people', rc.people)} · ${t('{0} sections', rc.sections)}`), h('div', { class: 'psub' }, p.info)),
+      body.append(...[h('div', { class: 'sumbox' }, h('div', { class: 'sumline' }, `${t('{0} houses', rc.houses)} · ${t('{0} people', rc.people)} · ${t('{0} sections', rc.sections)}`), h('div', { class: 'psub' }, p.info)),
         p.photos && Object.keys(p.photos).length ? h('div', { class: 'psub' }, t('{0} photos included.', Object.keys(p.photos).length)) : null,
         h('div', { class: 'psub' }, t('Your current map is backed up first, and you can undo.')),
         h('button', { class: 'primary wide', type: 'button', onclick: async () => {
           if (!S.blocks.length || await confirmDialog({ title: t('Replace everything?'), message: t('Your current map is replaced by this file. A backup is made first.'), ok: t('Replace'), danger: true })) go(p.replaceState, p.kind === 'legacy' ? t('Converted and imported.') : t('Restored.'));
-        } }, t('Replace everything with this file')));
+        } }, t('Replace everything with this file'))].filter(Boolean));
     },
   });
 }

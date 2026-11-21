@@ -75,8 +75,16 @@ function roadSVG(r, c) {
   if (D) add('rect', { x: 0, y: 50, width: 100, height: 50 + ext }, 'rd');
   if (L) add('rect', { x: -ext, y: 0, width: 50 + ext, height: 100 }, 'rd');
   if (R) add('rect', { x: 50, y: 0, width: 50 + ext, height: 100 }, 'rd');
-  if (U && D && R && !L || false) { /* junction shapes are covered by the arms above */ }
+  const UL = isRoad(r - 1, c - 1), UR = isRoad(r - 1, c + 1), DL = isRoad(r + 1, c - 1), DR = isRoad(r + 1, c + 1);
+  // fill the little gap where four road cells meet
+  if (U && L && UL) add('rect', { x: -ext, y: -ext, width: 50 + ext, height: 50 + ext }, 'rd');
+  if (U && R && UR) add('rect', { x: 50, y: -ext, width: 50 + ext, height: 50 + ext }, 'rd');
+  if (D && L && DL) add('rect', { x: -ext, y: 50, width: 50 + ext, height: 50 + ext }, 'rd');
+  if (D && R && DR) add('rect', { x: 50, y: 50, width: 50 + ext, height: 50 + ext }, 'rd');
+  // wide roads (2+ cells thick) get plain asphalt: no centre line, so they never look cluttered
+  const wide = (U && L && UL) || (U && R && UR) || (D && L && DL) || (D && R && DR);
   const cap = (x, y, w, hh) => add('rect', { x: x - w / 2, y: y - hh / 2, width: w, height: hh, rx: Math.min(w, hh) / 2 }, 'rdash');
+  if (wide) return svg;
   const horizOnly = (L || R) && !U && !D, vertOnly = (U || D) && !L && !R;
   if (horizOnly) { for (const x of [16, 50, 84]) cap(x, 50, 18, 7); }
   else if (vertOnly) { for (const y of [16, 50, 84]) cap(50, y, 7, 18); }
