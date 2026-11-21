@@ -221,3 +221,7 @@ textarea.input{resize:vertical}
 .chg{font-size:13px;padding:7px 10px;border-radius:9px;margin-bottom:5px;background:var(--panel);border:1px solid var(--line);word-break:break-word}
 .chg.new{border-left:4px solid #34c759}.chg.update{border-left:4px solid var(--blue)}.chg.err{border-left:4px solid var(--red);background:rgba(255,59,48,.07)}.chg.warn{border-left:4px solid var(--orange)}
 .bkrow{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:6px}
+
+.syncdot{border:0;background:var(--panel2);color:var(--muted);font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:2px}
+.syncdot.ok{color:#1d8f45}.syncdot.warn{color:#b36b00;background:#fff1d6}.syncdot.bad{color:#b3261e;background:#ffe3e1}
+@media (prefers-color-scheme:dark){.syncdot.ok{color:#4ddc86}.syncdot.warn{color:#ffc27a;background:#4a3a14}.syncdot.bad{color:#ffb4ac;background:#4a1f1c}}

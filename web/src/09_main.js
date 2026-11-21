@@ -55,9 +55,11 @@ async function main() {
 
   renderAll();
   $('#loading').remove();
+  syncStart().catch((e) => console.warn('sync not started', e));
 }
 
 window.__nsk = {
+  syncNow, sync, syncStatusText, setPhoto, removePhoto, photoOf, createHouseAt, mutate,
   get S() { return S; }, get settings() { return settings; }, ui, kv, t,
   importBuffer, buildCSV, csvParse, planCSVImport, convertLegacyStore, buildBirthdayICS, upcomingBirthdays,
   parseDateLoose, firstEmoji, renderAll, doSave, getBackups, nextBirthday,

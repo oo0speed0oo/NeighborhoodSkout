@@ -124,16 +124,18 @@ function findPerson(personId) {
 // ----- saving (every change, immediately, with a visible error if it fails) -----
 let saveTimer = null;
 let onSaveStatus = () => {};
+let onLocalSaved = () => {};   // set by the sync code when a home server is present
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(doSave, 40);
 }
 async function doSave() {
-  clearTimeout(saveTimer);
+  clearTimeout(saveTimer); saveTimer = null;
   try {
     S.savedAt = nowISO();
     await kv.set('state', S);
     saveStatus = { ...saveStatus, ok: true, at: new Date(), error: null };
+    try { onLocalSaved(); } catch (e) { /* sync is optional */ }
   } catch (e) {
     saveStatus = { ...saveStatus, ok: false, error: String(e && e.message || e) };
   }
@@ -204,10 +206,12 @@ async function setPhoto(id, blob) {
   await kv.set('photo:' + id, blob);
   if (photoUrls.has(id)) URL.revokeObjectURL(photoUrls.get(id));
   photoUrls.set(id, URL.createObjectURL(blob));
+  try { onLocalSaved(); } catch (e) { /* sync is optional */ }
 }
 async function removePhoto(id) {
   if (photoUrls.has(id)) { URL.revokeObjectURL(photoUrls.get(id)); photoUrls.delete(id); }
   if (!usingFallback) await kv.del('photo:' + id);
+  try { onLocalSaved(); } catch (e) { /* sync is optional */ }
 }
 const photoOf = (id) => photoUrls.get(id) || null;
 

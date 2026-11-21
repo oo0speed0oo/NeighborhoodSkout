@@ -432,6 +432,13 @@ function openSettings() {
         h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: settings.dayBefore, onchange: (e) => setS('dayBefore', e.target.checked) }), h('span', null, t('Also remind me the day before'))),
         h('button', { class: 'ghost wide', type: 'button', onclick: openUpcoming }, '🎂 ' + t('Upcoming birthdays')),
         h('button', { class: 'ghost wide', type: 'button', onclick: exportICS }, '📅 ' + t('Add all birthdays to my Calendar')),
+        ...(sync.enabled ? [
+          h('div', { class: 'sect' }, t('Sync')),
+          h('div', { class: sync.paused || (!sync.online && sync.error) ? 'badline' : 'okline' }, '☁ ' + syncStatusText()),
+          h('div', { class: 'psub' }, t('This device saves to your home server automatically. Every device that opens this address sees the same map.')),
+          sync.error && !sync.online ? h('div', { class: 'psub' }, t('Sync problem: {0}', sync.error)) : null,
+          h('div', { class: 'btnrow' }, h('button', { class: 'ghost', type: 'button', onclick: () => syncNow({ manual: true }) }, '🔄 ' + t('Sync now'))),
+        ].filter(Boolean) : []),
         h('div', { class: 'sect' }, t('Your data')),
         status,
         h('div', { class: 'psub' }, saveStatus.persisted === true ? t('The browser has promised not to clear this data automatically.') : saveStatus.persisted === false ? t('The browser may clear this data if the device runs low on space. Download a backup file now and then.') : ''),
@@ -445,7 +452,7 @@ function openSettings() {
         bkBox,
         h('div', { class: 'sect' }, t('About')),
         h('div', { class: 'psub' }, `NeighborhoodSkout ${APP_VERSION}`),
-        h('div', { class: 'psub' }, t('Everything stays on this device. There is no account and no server.')),
+        h('div', { class: 'psub' }, sync.enabled ? t('Your map is stored on your own home server and on each of your devices. Nothing goes to any company.') : t('Everything stays on this device. There is no account and no server.')),
         h('button', { class: 'dangerlink', type: 'button', onclick: async () => {
           if (!(await confirmDialog({ title: t('Erase the whole map?'), message: t('All houses, people and decorations are removed from the map. A backup is kept inside the app, so you can still restore it.'), ok: t('Erase'), danger: true }))) return;
           await addBackup(t('Before erase'), 'auto').catch(() => {});

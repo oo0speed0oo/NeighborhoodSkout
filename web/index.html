@@ -238,13 +238,17 @@ textarea.input{resize:vertical}
 .chg.new{border-left:4px solid #34c759}.chg.update{border-left:4px solid var(--blue)}.chg.err{border-left:4px solid var(--red);background:rgba(255,59,48,.07)}.chg.warn{border-left:4px solid var(--orange)}
 .bkrow{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:6px}
 
+.syncdot{border:0;background:var(--panel2);color:var(--muted);font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:2px}
+.syncdot.ok{color:#1d8f45}.syncdot.warn{color:#b36b00;background:#fff1d6}.syncdot.bad{color:#b3261e;background:#ffe3e1}
+@media (prefers-color-scheme:dark){.syncdot.ok{color:#4ddc86}.syncdot.warn{color:#ffc27a;background:#4a3a14}.syncdot.bad{color:#ffb4ac;background:#4a1f1c}}
+
 </style>
 </head>
 <body>
 <div id="app">
   <header class="top">
     <button id="btnSettings" class="tbtn" type="button" aria-label="Settings">⚙︎</button>
-    <div class="title">NeighborhoodSkout</div>
+    <div class="title">NeighborhoodSkout <button id="syncDot" class="syncdot" type="button" hidden></button></div>
     <button id="btnMenu" class="tbtn" type="button" aria-label="Menu">⋯</button>
   </header>
   <div class="zoombar">
@@ -514,6 +518,22 @@ const JA = {
   '{0} wanted row {1}, col {2}, but that cell is taken. It was put at row {3}, col {4}.': '{0} は {1}行 {2}列 を希望しましたが、すでに使われているため {3}行 {4}列 に置きました。',
   '{0} was removed together with its {1} people.': '{0} と住民 {1} 人を削除しました。',
   '{0} yrs': '{0}歳',
+  'Sync': '同期',
+  'Sync now': '今すぐ同期',
+  'Syncing…': '同期中…',
+  'Waiting to sync…': '同期待ち…',
+  'Not synced yet': 'まだ同期していません',
+  'Last synced: {0}': '最後の同期：{0}',
+  'Offline: changes are saved on this device and will sync later.': 'オフライン：変更はこの端末に保存され、あとで同期されます。',
+  'Sync paused: choose which map to keep.': '同期を一時停止中：残すマップを選んでください。',
+  'Updated from your other device.': 'もう一方の端末の内容に更新しました。',
+  'Before sync': '同期前',
+  'The server and this device have different maps': 'サーバーとこの端末のマップが違います',
+  'Use the server map ({0} houses, {1} people)': 'サーバーのマップを使う（家 {0} 軒・{1} 人）',
+  "Keep this device's map ({0} houses, {1} people)": 'この端末のマップを残す（家 {0} 軒・{1} 人）',
+  'Sync problem: {0}': '同期の問題：{0}',
+  'This device saves to your home server automatically. Every device that opens this address sees the same map.': 'この端末の変更は自動で自宅サーバーに保存されます。このアドレスを開く端末はどれも同じマップになります。',
+  'Your map is stored on your own home server and on each of your devices. Nothing goes to any company.': 'マップは自宅のサーバーと各端末に保存されます。外部の会社には送られません。',
   '…and {0} more.': '…ほか {0} 件。',
   '🎂 Birthday in {0} days': '🎂 誕生日まであと{0}日',
   '🎂 Birthday today!': '🎂 今日は誕生日！',
@@ -757,16 +777,18 @@ function findPerson(personId) {
 // ----- saving (every change, immediately, with a visible error if it fails) -----
 let saveTimer = null;
 let onSaveStatus = () => {};
+let onLocalSaved = () => {};   // set by the sync code when a home server is present
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(doSave, 40);
 }
 async function doSave() {
-  clearTimeout(saveTimer);
+  clearTimeout(saveTimer); saveTimer = null;
   try {
     S.savedAt = nowISO();
     await kv.set('state', S);
     saveStatus = { ...saveStatus, ok: true, at: new Date(), error: null };
+    try { onLocalSaved(); } catch (e) { /* sync is optional */ }
   } catch (e) {
     saveStatus = { ...saveStatus, ok: false, error: String(e && e.message || e) };
   }
@@ -837,10 +859,12 @@ async function setPhoto(id, blob) {
   await kv.set('photo:' + id, blob);
   if (photoUrls.has(id)) URL.revokeObjectURL(photoUrls.get(id));
   photoUrls.set(id, URL.createObjectURL(blob));
+  try { onLocalSaved(); } catch (e) { /* sync is optional */ }
 }
 async function removePhoto(id) {
   if (photoUrls.has(id)) { URL.revokeObjectURL(photoUrls.get(id)); photoUrls.delete(id); }
   if (!usingFallback) await kv.del('photo:' + id);
+  try { onLocalSaved(); } catch (e) { /* sync is optional */ }
 }
 const photoOf = (id) => photoUrls.get(id) || null;
 
@@ -2374,6 +2398,13 @@ function openSettings() {
         h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: settings.dayBefore, onchange: (e) => setS('dayBefore', e.target.checked) }), h('span', null, t('Also remind me the day before'))),
         h('button', { class: 'ghost wide', type: 'button', onclick: openUpcoming }, '🎂 ' + t('Upcoming birthdays')),
         h('button', { class: 'ghost wide', type: 'button', onclick: exportICS }, '📅 ' + t('Add all birthdays to my Calendar')),
+        ...(sync.enabled ? [
+          h('div', { class: 'sect' }, t('Sync')),
+          h('div', { class: sync.paused || (!sync.online && sync.error) ? 'badline' : 'okline' }, '☁ ' + syncStatusText()),
+          h('div', { class: 'psub' }, t('This device saves to your home server automatically. Every device that opens this address sees the same map.')),
+          sync.error && !sync.online ? h('div', { class: 'psub' }, t('Sync problem: {0}', sync.error)) : null,
+          h('div', { class: 'btnrow' }, h('button', { class: 'ghost', type: 'button', onclick: () => syncNow({ manual: true }) }, '🔄 ' + t('Sync now'))),
+        ].filter(Boolean) : []),
         h('div', { class: 'sect' }, t('Your data')),
         status,
         h('div', { class: 'psub' }, saveStatus.persisted === true ? t('The browser has promised not to clear this data automatically.') : saveStatus.persisted === false ? t('The browser may clear this data if the device runs low on space. Download a backup file now and then.') : ''),
@@ -2387,7 +2418,7 @@ function openSettings() {
         bkBox,
         h('div', { class: 'sect' }, t('About')),
         h('div', { class: 'psub' }, `NeighborhoodSkout ${APP_VERSION}`),
-        h('div', { class: 'psub' }, t('Everything stays on this device. There is no account and no server.')),
+        h('div', { class: 'psub' }, sync.enabled ? t('Your map is stored on your own home server and on each of your devices. Nothing goes to any company.') : t('Everything stays on this device. There is no account and no server.')),
         h('button', { class: 'dangerlink', type: 'button', onclick: async () => {
           if (!(await confirmDialog({ title: t('Erase the whole map?'), message: t('All houses, people and decorations are removed from the map. A backup is kept inside the app, so you can still restore it.'), ok: t('Erase'), danger: true }))) return;
           await addBackup(t('Before erase'), 'auto').catch(() => {});
@@ -2405,6 +2436,214 @@ function openMenu() {
     { label: '📅 ' + t('Birthdays to my Calendar'), onClick: exportICS },
     { label: '⬇️ ' + t('Download backup file'), onClick: downloadFullBackup },
   ]);
+}
+
+// ===== Sync with your home server =====
+// Only active when this page is served by server.py (it answers /api/ping). On any other
+// address (a website, a file on your computer) nothing here runs and the app stays local-only.
+const sync = { enabled: false, online: false, busy: false, paused: false, again: false, rev: null, dirty: false, seq: 0, lastOk: null, error: null };
+let syncTimer = null;
+
+async function syncApi(method, path, opts = {}) {
+  const ctl = new AbortController();
+  const to = setTimeout(() => ctl.abort(), 15000);
+  try {
+    return await fetch('api/' + path, { method, body: opts.body, headers: { 'X-Skout': '1', ...(opts.headers || {}) }, signal: ctl.signal, cache: 'no-store' });
+  } finally { clearTimeout(to); }
+}
+async function syncLoadMeta() {
+  const m = (await kv.get('syncmeta').catch(() => null)) || {};
+  sync.rev = m.rev === undefined ? null : m.rev;
+  sync.dirty = !!m.dirty;
+}
+async function syncSaveMeta() { try { await kv.set('syncmeta', { rev: sync.rev, dirty: sync.dirty }); } catch (e) { /* ignore */ } }
+const syncHasData = () => S.blocks.length > 0 || S.sections.length > 0;
+function syncCanInterrupt() {
+  return !document.body.classList.contains('modal-open') && !sheetOpen && !ui.moving && !strokeOpen && !document.querySelector('.overlay');
+}
+
+function syncStatusText() {
+  if (sync.paused) return t('Sync paused: choose which map to keep.');
+  if (sync.busy) return t('Syncing…');
+  if (!sync.online && sync.error) return t('Offline: changes are saved on this device and will sync later.');
+  if (sync.dirty) return t('Waiting to sync…');
+  return sync.lastOk ? t('Last synced: {0}', sync.lastOk.toLocaleTimeString()) : t('Not synced yet');
+}
+function updateSyncUI() {
+  const el = $('#syncDot');
+  if (!el) return;
+  el.hidden = !sync.enabled;
+  if (!sync.enabled) return;
+  let cls = 'ok', txt = '☁ ✓';
+  if (sync.paused) { cls = 'bad'; txt = '☁ !'; }
+  else if (sync.busy) { cls = ''; txt = '☁ …'; }
+  else if (!sync.online && sync.error) { cls = 'bad'; txt = '☁ ✕'; }
+  else if (sync.dirty) { cls = 'warn'; txt = '☁ ↑'; }
+  el.className = 'syncdot ' + cls;
+  el.textContent = txt;
+  el.title = syncStatusText();
+  el.setAttribute('aria-label', syncStatusText());
+  refreshModals();
+}
+
+async function syncServerInfo() {
+  const r = await syncApi('GET', 'ping');
+  if (!r.ok) throw new Error('Server answered ' + r.status);
+  return r.json();   // { rev, houses, people }
+}
+
+async function syncStart() {
+  if (!/^https?:$/.test(location.protocol)) return false;   // a file opened from disk: local-only
+  try {
+    const r = await syncApi('GET', 'ping');
+    if (!r.ok) return false;
+    const j = await r.json();
+    if (!j || j.app !== 'NeighborhoodSkout-server') return false;
+  } catch (e) { return false; }
+  sync.enabled = true;
+  await syncLoadMeta();
+  onLocalSaved = () => {
+    if (!sync.enabled) return;
+    sync.seq++; sync.dirty = true; syncSaveMeta(); updateSyncUI();
+    if (!sync.paused) syncSchedule(1500);
+  };
+  $('#syncDot').addEventListener('click', () => { syncNow({ manual: true }).then(() => toast(syncStatusText())); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(); });
+  window.addEventListener('focus', () => syncNow());
+  window.addEventListener('online', () => syncNow());
+  setInterval(() => { if (document.visibilityState === 'visible') syncNow(); }, 30000);
+  updateSyncUI();
+  syncNow({ startup: true });
+  return true;
+}
+
+function syncSchedule(ms) { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(), ms); }
+
+async function syncNow(opts = {}) {
+  if (!sync.enabled) return;
+  if (sync.busy) { sync.again = true; return; }
+  if (sync.paused && !opts.manual) return;
+  if (opts.manual) sync.paused = false;
+  sync.busy = true; updateSyncUI();
+  try {
+    flushSave();
+    await syncRun();
+    sync.online = true; sync.error = null; if (!sync.paused) sync.lastOk = new Date();
+  } catch (e) {
+    sync.online = false; sync.error = String((e && e.message) || e);
+  } finally {
+    sync.busy = false; updateSyncUI();
+    if (sync.again) { sync.again = false; syncSchedule(300); }
+  }
+}
+
+async function syncRun() {
+  const info = await syncServerInfo();
+  const srv = info.rev;
+  if (srv === '0') {                                   // server has no map yet
+    if (syncHasData()) await syncPush('0');
+    else { sync.rev = '0'; sync.dirty = false; await syncSaveMeta(); }
+    return;
+  }
+  if (sync.rev === srv) { if (sync.dirty) await syncPush(srv); return; }
+  // the server's map is different from the one this device last saw
+  if (sync.rev === null && !syncHasData()) return syncPull(true);
+  if (sync.rev !== null && !sync.dirty) {
+    if (!syncCanInterrupt()) { syncSchedule(4000); return; }
+    return syncPull(true);
+  }
+  return syncAskConflict(info);                         // both changed (or first connection with a map on both sides)
+}
+
+async function syncPhotoList() {
+  const r = await syncApi('GET', 'photos');
+  if (!r.ok) throw new Error('Server answered ' + r.status);
+  return r.json();   // [{id,size}]
+}
+async function syncPhotosUp() {            // upload what the server lacks (before the map is committed)
+  if (usingFallback) return;
+  const remote = new Map((await syncPhotoList()).map((x) => [x.id, x.size]));
+  for (const id of photoUrls.keys()) {
+    const blob = await kv.get('photo:' + id).catch(() => null);
+    if (!blob) continue;
+    if (remote.get(id) !== blob.size) {
+      const r = await syncApi('PUT', 'photo/' + encodeURIComponent(id), { body: blob, headers: { 'Content-Type': 'image/jpeg' } });
+      if (!r.ok) throw new Error('Photo upload failed (' + r.status + ')');
+    }
+  }
+}
+async function syncPhotosTrim() {          // after a successful push, remove photos this device no longer has
+  if (usingFallback) return;
+  for (const x of await syncPhotoList()) if (!photoUrls.has(x.id)) await syncApi('DELETE', 'photo/' + encodeURIComponent(x.id));
+}
+async function syncPhotosDown() {          // make this device's photos match the server's
+  if (usingFallback) return;
+  const list = await syncPhotoList();
+  const keep = new Set(list.map((x) => x.id));
+  for (const x of list) {
+    const have = photoUrls.has(x.id) ? await kv.get('photo:' + x.id).catch(() => null) : null;
+    if (have && have.size === x.size) continue;
+    const r = await syncApi('GET', 'photo/' + encodeURIComponent(x.id));
+    if (!r.ok) continue;
+    const blob = await r.blob();
+    await kv.set('photo:' + x.id, blob);
+    if (photoUrls.has(x.id)) URL.revokeObjectURL(photoUrls.get(x.id));
+    photoUrls.set(x.id, URL.createObjectURL(blob));
+  }
+  for (const id of [...photoUrls.keys()]) {
+    if (keep.has(id)) continue;
+    URL.revokeObjectURL(photoUrls.get(id)); photoUrls.delete(id);
+    await kv.del('photo:' + id).catch(() => {});
+  }
+}
+
+async function syncPush(ifMatch) {
+  const seq = sync.seq;
+  await syncPhotosUp();
+  const r = await syncApi('PUT', 'state', { body: JSON.stringify(S), headers: { 'Content-Type': 'application/json', 'If-Match': ifMatch } });
+  if (r.status === 412) return syncAskConflict(await syncServerInfo());
+  if (!r.ok) throw new Error('Server answered ' + r.status);
+  const j = await r.json();
+  await syncPhotosTrim();
+  sync.rev = j.rev;
+  if (sync.seq === seq) sync.dirty = false;
+  await syncSaveMeta();
+  if (sync.dirty) syncSchedule(500);
+}
+
+async function syncPull(announce) {
+  const seq = sync.seq;
+  const r = await syncApi('GET', 'state');
+  if (!r.ok) throw new Error('Server answered ' + r.status);
+  const rev = r.headers.get('X-Rev');
+  const remote = normalizeState(await r.json());
+  if (sync.seq !== seq) { sync.again = true; return; }          // you edited while we were fetching: decide again
+  if (syncHasData()) await addBackup(t('Before sync'), 'auto').catch(() => {});
+  await syncPhotosDown();
+  S = remote; reindex(); clearHistory();
+  await kv.set('state', S);
+  sync.rev = rev; sync.dirty = false; await syncSaveMeta();
+  ui.moving = null; ui.moveSrc = null;
+  renderAll();
+  if (announce && syncHasData()) toast(t('Updated from your other device.'));
+}
+
+function syncAskConflict(info) {
+  if (sync.paused) return;
+  sync.paused = true; updateSyncUI();
+  const mine = countsOf(S);
+  openSheet(t('The server and this device have different maps'), t('Your current map is backed up first.'), [
+    { label: t('Use the server map ({0} houses, {1} people)', info.houses, info.people), onClick: () => syncResolve(async () => { await syncPull(true); }) },
+    { label: t("Keep this device's map ({0} houses, {1} people)", mine.houses, mine.people), onClick: () => syncResolve(async () => { await syncPush(info.rev); }) },
+  ]);
+}
+async function syncResolve(fn) {
+  sync.paused = false;
+  if (sync.busy) { sync.again = true; return; }
+  sync.busy = true; updateSyncUI();
+  try { flushSave(); await fn(); sync.online = true; sync.error = null; sync.lastOk = new Date(); }
+  catch (e) { sync.online = false; sync.error = String((e && e.message) || e); }
+  finally { sync.busy = false; updateSyncUI(); }
 }
 
 // ===== Startup =====
@@ -2464,9 +2703,11 @@ async function main() {
 
   renderAll();
   $('#loading').remove();
+  syncStart().catch((e) => console.warn('sync not started', e));
 }
 
 window.__nsk = {
+  syncNow, sync, syncStatusText, setPhoto, removePhoto, photoOf, createHouseAt, mutate,
   get S() { return S; }, get settings() { return settings; }, ui, kv, t,
   importBuffer, buildCSV, csvParse, planCSVImport, convertLegacyStore, buildBirthdayICS, upcomingBirthdays,
   parseDateLoose, firstEmoji, renderAll, doSave, getBackups, nextBirthday,
