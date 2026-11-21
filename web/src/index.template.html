@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Skout">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f8f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="referrer" content="no-referrer">
+<title>NeighborhoodSkout</title>
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <button id="btnSettings" class="tbtn" type="button" aria-label="Settings">⚙︎</button>
+    <div class="title">NeighborhoodSkout</div>
+    <button id="btnMenu" class="tbtn" type="button" aria-label="Menu">⋯</button>
+  </header>
+  <div class="zoombar">
+    <button id="btnZoomOut" class="zbtn" type="button" aria-label="Zoom out">−</button>
+    <span class="zlabel">🔍</span>
+    <button id="btnZoomIn" class="zbtn" type="button" aria-label="Zoom in">＋</button>
+    <button id="btnEdit" class="editbtn" type="button">✏️ Edit Map</button>
+    <span id="count" class="count"></span>
+    <span id="editNote" class="editnote" hidden></span>
+  </div>
+  <div id="banners"></div>
+  <main id="mapScroll">
+    <div id="map" class="map mint"></div>
+    <div id="gridTools" hidden></div>
+  </main>
+  <div id="palette" class="palette" hidden></div>
+</div>
+<div id="modalRoot"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="loading">Loading…</div>
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>

@@ -1,0 +1,2476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Skout">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f8f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="referrer" content="no-referrer">
+<title>NeighborhoodSkout</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f8f8fb;--panel:#fff;--panel2:#f2f2f7;--text:#111114;--muted:#76767e;--line:#d9d9df;
+  --blue:#0a84ff;--orange:#ff9500;--red:#ff3b30;--green:#12c75a;
+  --grass-fill:#eaf4e4;--grass-line:#aacda0;--plain-line:#c6c6cf;
+  --road:#38383d;--dash:#ecd028;--shadow:rgba(0,0,0,.12);
+  --sc-purple:#b0a8ed;--sc-teal:#5cc9a6;--sc-coral:#f0997a;--sc-pink:#ed94b0;--sc-blue:#6199f2;--sc-green:#66b861;--sc-orange:#f2a647;--sc-red:#e66666;
+  --tint:.3;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#121214;--panel:#1c1c1f;--panel2:#2a2a2e;--text:#f2f2f5;--muted:#9a9aa3;--line:#3a3a40;
+    --blue:#4da3ff;--grass-fill:#243a28;--grass-line:#45614a;--plain-line:#4a4a52;
+    --road:#505057;--dash:#e8cf3a;--shadow:rgba(0,0,0,.5);--tint:.38;
+  }
+}
+/* house colors: --hb background, --hd border, --ht text */
+.hc-purple{--hb:#ededfe;--hd:#b0a8ed;--ht:#3d338a}
+.hc-teal{--hb:#e0f5ed;--hd:#5cc9a6;--ht:#084f40}
+.hc-coral{--hb:#faede8;--hd:#f0997a;--ht:#4a1c0d}
+.hc-pink{--hb:#faebf0;--hd:#ed94b0;--ht:#4a1429}
+.hc-blue{--hb:#e6f0ff;--hd:#6199f2;--ht:#1440a6}
+.hc-green{--hb:#e6f5e0;--hd:#66b861;--ht:#1a611a}
+.hc-orange{--hb:#fff0db;--hd:#f2a647;--ht:#804705}
+.hc-red{--hb:#ffe8e8;--hd:#e66666;--ht:#8c1a1a}
+@media (prefers-color-scheme:dark){
+  .hc-purple{--hb:#2a2748;--hd:#6c64b5;--ht:#cfcaff}
+  .hc-teal{--hb:#1b3a33;--hd:#3f9c82;--ht:#a8ecd5}
+  .hc-coral{--hb:#40281f;--hd:#c27458;--ht:#ffcdb9}
+  .hc-pink{--hb:#40222d;--hd:#c4698a;--ht:#ffc6d9}
+  .hc-blue{--hb:#1d2f4d;--hd:#4a7ccc;--ht:#b9d3ff}
+  .hc-green{--hb:#213a20;--hd:#4f9a4b;--ht:#bdf0b8}
+  .hc-orange{--hb:#44301a;--hd:#cc8a35;--ht:#ffd9a0}
+  .hc-red{--hb:#442222;--hd:#c25050;--ht:#ffbcbc}
+}
+.sc-purple{--sec:rgba(176,168,237,var(--tint))}.sc-teal{--sec:rgba(92,201,166,var(--tint))}.sc-coral{--sec:rgba(240,153,122,var(--tint))}
+.sc-pink{--sec:rgba(237,148,176,var(--tint))}.sc-blue{--sec:rgba(97,153,242,var(--tint))}.sc-green{--sec:rgba(102,184,97,var(--tint))}
+.sc-orange{--sec:rgba(242,166,71,var(--tint))}.sc-red{--sec:rgba(230,102,102,var(--tint))}
+
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.35 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Segoe UI",Roboto,"Noto Sans JP",sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+body.modal-open{overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+[hidden]{display:none!important}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:720px;margin:0 auto;background:var(--bg);position:relative}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);color:var(--muted);z-index:200}
+
+/* top bar */
+.top{display:grid;grid-template-columns:56px 1fr 56px;align-items:center;padding:calc(env(safe-area-inset-top) + 6px) 8px 6px;background:var(--panel);border-bottom:1px solid var(--line)}
+.title{text-align:center;font-weight:700;font-size:17px}
+.tbtn{background:none;border:0;color:var(--blue);font-size:24px;height:40px;border-radius:10px}
+.zoombar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.zbtn{width:34px;height:34px;border-radius:50%;border:0;background:var(--panel2);font-size:20px;line-height:1;color:var(--text)}
+.zlabel{font-size:15px;opacity:.7}
+.editbtn{margin-left:8px;padding:7px 14px;border-radius:99px;border:0;background:var(--panel2);font-weight:600;font-size:14px}
+.editbtn.on{background:var(--orange);color:#fff}
+.count{margin-left:auto;font-size:13px;color:var(--muted);background:var(--panel2);padding:5px 11px;border-radius:99px;white-space:nowrap}
+.editnote{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#aa5f00;background:#ffeed6;padding:5px 10px;border-radius:99px;font-weight:600}
+@media (prefers-color-scheme:dark){.editnote{color:#ffc27a;background:#4a3515}}
+
+/* banners */
+#banners:empty{display:none}
+#banners{padding:8px 0 0}
+.banner{display:flex;gap:8px;align-items:center;padding:9px 12px;margin:0 12px 6px;border-radius:12px;font-size:13px}
+.banner>span,.banner>.bl{flex:1}
+.banner button{background:none;border:0;font-weight:700;color:inherit;padding:2px 6px}
+.banner.bday{background:#fff1d6;color:#6b4300}.banner.err{background:#ffe3e1;color:#8a1c14}.banner.move{background:#dcebff;color:#0f3f8c}
+@media (prefers-color-scheme:dark){.banner.bday{background:#4a3a14;color:#ffdca0}.banner.err{background:#4a1f1c;color:#ffb4ac}.banner.move{background:#18335a;color:#b8d4ff}}
+
+/* the map */
+#mapScroll{flex:1;overflow:auto;padding:14px 16px 40px;-webkit-overflow-scrolling:touch}
+#map{display:grid;gap:3px;width:max-content;margin:6px auto 0;isolation:isolate;position:relative}
+#gridTools{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
+#gridTools button{padding:8px 12px;border-radius:99px;border:1px solid var(--line);background:var(--panel);font-size:13px}
+.cell{position:relative;width:var(--cell);height:var(--cell);padding:0;border:0;background:none;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.cell.sec::before{content:'';position:absolute;inset:-2px;border-radius:9px;background:var(--sec);z-index:-1;pointer-events:none}
+.mint .cell.grass,.mint .cell.deco{background:var(--grass-fill);border:1px dashed var(--grass-line)}
+.plain .cell.grass,.plain .cell.deco{background:transparent;border:1px dashed var(--plain-line)}
+.mint .cell.grass.sec,.mint .cell.deco.sec{box-shadow:inset 0 0 0 200px var(--sec)}
+.cell.grass:hover{filter:brightness(.97)}
+.bigico{font-size:calc(var(--cell)*.52);line-height:1}
+.cell.road{overflow:visible}
+.roadsvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.rd{fill:var(--road)}.rdash{fill:var(--dash)}
+.cell.house{background:var(--hb);border:1px solid var(--hd);color:var(--ht);box-shadow:0 1.5px 3px var(--shadow);padding:2px}
+.cell.house .ico{font-size:calc(var(--cell)*.34);line-height:1}
+.cell.house .hph{width:calc(var(--cell)*.42);height:calc(var(--cell)*.42);border-radius:50%;object-fit:cover}
+.cell.house .nm{font-size:max(8px,calc(var(--cell)*.155));font-weight:700;line-height:1.12;max-width:100%;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;padding:0 1px}
+.cell.house .cnt{font-size:max(7px,calc(var(--cell)*.135));opacity:.8;line-height:1}
+.cell.house .cake{position:absolute;bottom:1px;right:2px;font-size:calc(var(--cell)*.22);line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
+.cell.drop{outline:2px dashed var(--blue);outline-offset:-2px;background:rgba(10,132,255,.14)!important}
+.cell.lift{outline:3px solid var(--blue);outline-offset:1px;z-index:3}
+.editing .cell.house,.editing .cell.road,.editing .cell.deco{outline:1.8px solid var(--orange);outline-offset:-1px}
+.editing .cell.lift{outline:3px solid var(--blue)}
+.chip{position:absolute;top:-9px;left:2px;z-index:6;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;pointer-events:none;box-shadow:0 1px 2px rgba(0,0,0,.25);text-shadow:0 0 2px rgba(0,0,0,.25)}
+.editing .chip{pointer-events:auto;cursor:pointer}
+
+/* edit palette */
+.palette{background:var(--panel);border-radius:18px 18px 0 0;box-shadow:0 -6px 24px var(--shadow);padding:6px 0 calc(env(safe-area-inset-bottom) + 8px);z-index:5}
+.grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 6px}
+.phead{display:flex;justify-content:space-between;align-items:center;padding:0 16px 4px}
+.phead b{font-size:14px}
+.undo{background:var(--panel2);border:0;padding:5px 12px;border-radius:99px;font-size:13px;color:var(--blue);font-weight:600}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 14px 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.pchip{flex:0 0 auto;width:54px;background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.pc{width:44px;height:44px;border-radius:10px;background:var(--panel2);border:2px solid transparent;display:grid;place-items:center;font-size:22px;position:relative}
+.pchip.sel .pc{border-color:var(--orange);background:rgba(255,149,0,.14)}
+.pl{font-size:10px;color:var(--muted);min-height:12px}
+.pc.grass{background:var(--grass-fill);box-shadow:inset 0 0 0 1px var(--grass-line)}
+.pc.road{background:var(--road)}.pc.road i{width:5px;height:20px;border-radius:3px;background:var(--dash)}
+.pc.house{background:#ededfe;box-shadow:inset 0 0 0 1px #b0a8ed}
+.pc.sec{background:rgba(97,153,242,.18);color:#2864d2;font-weight:800;font-size:19px;box-shadow:inset 0 0 0 1px #6199f2}
+.pc.mv{font-size:20px}
+.recent{display:flex;align-items:center;gap:6px;padding:2px 16px 4px;overflow-x:auto}
+.rl{font-size:11px;color:var(--muted);margin-right:2px}
+.rchip{flex:0 0 auto;width:36px;height:36px;border-radius:9px;border:2px solid transparent;background:var(--panel2);font-size:19px}
+.rchip.sel{border-color:var(--orange)}
+.secrow{display:flex;gap:6px;overflow-x:auto;padding:4px 14px}
+.spill{flex:0 0 auto;padding:6px 12px;border-radius:99px;border:2px solid transparent;background:var(--panel2);font-size:13px;white-space:nowrap;position:relative}
+.spill[style*="--pc"]{box-shadow:inset 4px 0 0 var(--pc)}
+.spill.sel{border-color:var(--orange)}.spill.add{color:var(--blue)}
+.phint{font-size:12px;color:var(--muted);padding:2px 16px 0}
+
+/* modals and sheets */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.overlay.closing{opacity:0;transition:opacity .12s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.msheet{background:var(--bg);width:100%;max-width:640px;height:min(92vh,900px);height:min(92dvh,900px);border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden;animation:rise .18s}
+@media (min-width:700px){.overlay{align-items:center}.msheet{border-radius:16px;height:min(86dvh,860px)}}
+@keyframes rise{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.mhead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 8px;background:var(--panel);border-bottom:1px solid var(--line);min-height:50px}
+.mtitle{font-weight:700;font-size:16px;text-align:center;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mbtn{background:none;border:0;color:var(--blue);font-size:16px;padding:8px 10px;justify-self:start}
+.mright{justify-self:end}.mbtn.strong{font-weight:700;justify-self:end}
+.mbody{flex:1;overflow:auto;padding:14px 16px calc(env(safe-area-inset-bottom) + 40px);-webkit-overflow-scrolling:touch}
+.sheetwrap{align-items:flex-end!important;padding:8px}
+.asheet{width:100%;max-width:520px;margin:0 auto env(safe-area-inset-bottom);animation:rise .16s}
+.agroup{background:var(--panel);border-radius:14px;overflow:hidden;margin-top:8px}
+.ahead{padding:12px 14px;text-align:center}
+.at{font-weight:700}.as{font-size:13px;color:var(--muted);margin-top:2px}
+.aitem{display:block;width:100%;padding:15px;font-size:18px;color:var(--blue);background:none;border:0;border-top:1px solid var(--line);text-align:center}
+.aitem.danger{color:var(--red)}.aitem.bold{font-weight:700;border-top:0}
+.dialogwrap{align-items:center!important;padding:24px;z-index:70}
+.dialog{background:var(--panel);border-radius:16px;width:100%;max-width:320px;overflow:hidden;text-align:center}
+.dt{padding:18px 16px 4px;font-weight:700;font-size:17px}.dm{padding:4px 16px 14px;font-size:14px;color:var(--muted)}
+.dbtns{display:flex;border-top:1px solid var(--line)}
+.dbtn{flex:1;padding:14px;background:none;border:0;font-size:17px;color:var(--blue)}
+.dbtn+.dbtn{border-left:1px solid var(--line)}.dbtn.bold{font-weight:700}.dbtn.danger{color:var(--red)}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translate(-50%,-10px);background:rgba(30,30,34,.94);color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;z-index:90;opacity:0;pointer-events:none;transition:.18s;max-width:min(92vw,520px);display:flex;gap:14px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.tact{background:none;border:0;color:#7cc0ff;font-weight:700;font-size:14px;padding:0;white-space:nowrap}
+
+/* forms and lists */
+.field{display:block;margin:0 0 14px}
+.flabel{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 2px 5px;text-transform:uppercase;letter-spacing:.03em}
+.fhint{font-size:12px;color:var(--muted);margin:5px 2px 0}.fhint.center{text-align:center;margin:10px 0}.fhint.bad{color:var(--red)}
+.input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font-size:16px;font-family:inherit}
+.input:focus{outline:2px solid var(--blue);outline-offset:-1px}
+textarea.input{resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;background:var(--panel2);border-radius:10px;padding:3px;gap:2px}
+.seg button{flex:1;border:0;background:none;padding:8px 4px;border-radius:8px;font-size:14px;white-space:nowrap}
+.seg button.on{background:var(--panel);box-shadow:0 1px 3px var(--shadow);font-weight:600}
+.primary{background:var(--blue);color:#fff;border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:16px}
+.primary.wide,.ghost.wide,.dangerbtn.wide{display:block;width:100%;margin-top:12px}
+.ghost{background:var(--panel2);border:0;border-radius:10px;padding:9px 14px;font-size:14px;color:var(--blue);font-weight:600}
+.ghost.danger{color:var(--red)}
+.dangerbtn{background:none;border:1.5px solid var(--red);color:var(--red);border-radius:12px;padding:11px 18px;font-weight:700;font-size:15px}
+.dangerlink{display:block;margin:22px auto 0;background:none;border:0;color:var(--red);font-size:15px;padding:8px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.sect{margin:24px 2px 8px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.sect:first-child{margin-top:4px}
+.check{display:flex;align-items:center;gap:10px;margin:10px 2px;font-size:15px}
+.check input{width:20px;height:20px}
+.or{text-align:center;color:var(--muted);margin:10px 0 0;font-size:13px}
+.okline{color:#1d8f45;font-size:14px;margin:4px 2px}.badline{color:var(--red);font-size:14px;margin:4px 2px}
+.photorow{display:flex;gap:14px;align-items:center;margin-bottom:16px}
+.pbtnrow{display:flex;gap:8px;flex-wrap:wrap}
+.thumb{width:72px;height:72px;border-radius:14px;object-fit:cover;background:var(--panel2);display:grid;place-items:center;font-size:36px}
+.avatar{border-radius:50%;display:grid;place-items:center;flex:0 0 auto;overflow:hidden;border:1.5px solid var(--line);line-height:1}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar.g-Male{background:#d9ebff;border-color:#6199f2}.avatar.g-Female{background:#ffe0ed;border-color:#ed94b0}.avatar.g-Other{background:#ececf0}
+@media (prefers-color-scheme:dark){.avatar.g-Male{background:#1d2f4d}.avatar.g-Female{background:#40222d}.avatar.g-Other{background:#2a2a2e}}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.swatch{width:36px;height:36px;border-radius:50%;background:var(--hb);border:3px solid var(--hd);padding:0}
+.swatch.sel{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--blue)}
+.iconrow{display:flex;gap:6px;flex-wrap:wrap}
+.iconpick{width:44px;height:44px;border-radius:10px;border:2px solid transparent;background:var(--panel2);font-size:22px;padding:0}
+.iconpick.sel{border-color:var(--blue)}
+.decorow{display:flex;align-items:center;gap:8px}.decoval{font-size:28px;min-width:36px;text-align:center}
+.grouphead{font-size:13px;font-weight:700;color:var(--muted);margin:16px 2px 8px}.grouphead:first-child{margin-top:2px}.grouphead.bad{color:var(--red)}
+.prow{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left;width:100%}
+.prow.static{cursor:default}
+.pmain{flex:1;min-width:0}
+.pname{font-weight:600;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.psub{font-size:12px;color:var(--muted);margin-top:1px}
+.pbday{font-size:12px;color:#b36b00;font-weight:600;margin-top:2px}
+@media (prefers-color-scheme:dark){.pbday{color:#ffc27a}}
+.pbtns{display:flex;gap:6px;align-items:center}
+.linebtn{background:var(--green);color:#fff;border:0;border-radius:9px;padding:8px 10px;font-weight:900;font-size:12px;letter-spacing:.02em}
+.iconbtn{display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--panel2);text-decoration:none;font-size:17px}
+.empty{text-align:center;color:var(--muted);padding:34px 10px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.empty .big{font-size:44px}
+.housephoto{width:100%;max-height:200px;object-fit:cover;border-radius:14px;margin-bottom:12px}
+.linehead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.linelogo{width:44px;height:44px;border-radius:10px;background:var(--green);color:#fff;font-weight:900;font-size:10px;display:grid;place-items:center}
+.linecard{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;background:var(--panel);border:1px solid rgba(18,199,90,.35);border-radius:16px;margin-bottom:10px}
+.lid{font-size:13px;color:#0e8c43;font-weight:600;margin-top:2px}
+@media (prefers-color-scheme:dark){.lid{color:#4ddc86}}
+.chatbtn{background:var(--green);color:#fff;border-radius:14px;padding:12px 14px;font-weight:700;font-size:13px;white-space:nowrap}
+.bdate{width:56px;text-align:center;flex:0 0 auto}.bm{font-weight:700;font-size:14px}.bd{font-size:11px;color:var(--muted)}
+.emojirow{display:flex;gap:8px;align-items:center}
+.emojiprev{width:48px;height:48px;border-radius:12px;background:var(--panel2);display:grid;place-items:center;font-size:28px;flex:0 0 auto}
+.emojigrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px}
+.emo{font-size:26px;padding:6px 0;background:none;border:0;border-radius:10px}.emo:hover{background:var(--panel2)}
+.sumbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:8px 0}
+.sumline{font-weight:700;font-size:15px}
+.chg{font-size:13px;padding:7px 10px;border-radius:9px;margin-bottom:5px;background:var(--panel);border:1px solid var(--line);word-break:break-word}
+.chg.new{border-left:4px solid #34c759}.chg.update{border-left:4px solid var(--blue)}.chg.err{border-left:4px solid var(--red);background:rgba(255,59,48,.07)}.chg.warn{border-left:4px solid var(--orange)}
+.bkrow{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:6px}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <button id="btnSettings" class="tbtn" type="button" aria-label="Settings">⚙︎</button>
+    <div class="title">NeighborhoodSkout</div>
+    <button id="btnMenu" class="tbtn" type="button" aria-label="Menu">⋯</button>
+  </header>
+  <div class="zoombar">
+    <button id="btnZoomOut" class="zbtn" type="button" aria-label="Zoom out">−</button>
+    <span class="zlabel">🔍</span>
+    <button id="btnZoomIn" class="zbtn" type="button" aria-label="Zoom in">＋</button>
+    <button id="btnEdit" class="editbtn" type="button">✏️ Edit Map</button>
+    <span id="count" class="count"></span>
+    <span id="editNote" class="editnote" hidden></span>
+  </div>
+  <div id="banners"></div>
+  <main id="mapScroll">
+    <div id="map" class="map mint"></div>
+    <div id="gridTools" hidden></div>
+  </main>
+  <div id="palette" class="palette" hidden></div>
+</div>
+<div id="modalRoot"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="loading">Loading…</div>
+<script>
+(function(){
+"use strict";
+// ===== Language: English keys, Japanese dictionary =====
+let LANG = 'en';
+function detectLang(pref) {
+  if (pref === 'en' || pref === 'ja') return pref;
+  const l = ((navigator.languages && navigator.languages[0]) || navigator.language || 'en').toLowerCase();
+  return l.startsWith('ja') ? 'ja' : 'en';
+}
+function t(key, ...args) {
+  let s = key;
+  if (LANG === 'ja' && Object.prototype.hasOwnProperty.call(JA, key)) s = JA[key];
+  return s.replace(/\{(\d+)\}/g, (m, i) => (args[+i] === undefined ? m : args[+i]));
+}
+const JA = {
+  'A complete backup from this app.': 'このアプリの完全なバックアップです。',
+  'A house row needs a HouseName or a HouseID.': '家の行には HouseName か HouseID が必要です。',
+  'A map saved by this app.': 'このアプリで保存したマップです。',
+  'About': 'このアプリについて',
+  'Add a birthday to a resident and it will show here.': '住民に誕生日を追加すると、ここに表示されます。',
+  'Add a resident': '住民を追加',
+  'Add all birthdays to my Calendar': 'すべての誕生日をカレンダーに追加',
+  'Add': '追加',
+  'All houses, people and decorations are removed from the map. A backup is kept inside the app, so you can still restore it.': 'すべての家・人・飾りがマップから消えます。アプリ内にバックアップが残るので、復元できます。',
+  'Also remind me the day before': '前日にもお知らせする',
+  'Anything that is not in the file stays as it is.': 'ファイルにないものはそのまま残ります。',
+  'Apply these changes': 'この変更を適用',
+  'Auto': '自動',
+  'Back up now (inside the app)': '今すぐバックアップ（アプリ内）',
+  'Back': '戻る',
+  'Backup failed: {0}': 'バックアップに失敗しました：{0}',
+  'Backup file downloaded. Keep it somewhere safe, like iCloud Drive.': 'バックアップファイルをダウンロードしました。iCloud Drive など安全な場所に保管してください。',
+  'Backup file': 'バックアップファイル',
+  'Backup restored.': 'バックアップを復元しました。',
+  'Backup saved inside the app.': 'アプリ内にバックアップを保存しました。',
+  'Backups inside the app': 'アプリ内のバックアップ',
+  'Before erase': '消去前',
+  'Before import': '読み込み前',
+  'Before restore': '復元前',
+  'Birthday "{0}" is not a date I understand (use 2024-05-03). {1} was not imported.': '誕生日「{0}」は日付として読めません（2024-05-03 の形式で）。{1} は読み込まれませんでした。',
+  'Birthday this week': '今週の誕生日',
+  'Birthday': '誕生日',
+  'Birthdays to my Calendar': '誕生日をカレンダーへ',
+  'Birthdays': '誕生日',
+  'CSV downloaded. Open it in Excel, Numbers or Google Sheets.': 'CSV をダウンロードしました。Excel・Numbers・Google スプレッドシートで開けます。',
+  'Calendar file with {0} birthdays downloaded.': '誕生日 {0} 件のカレンダーファイルをダウンロードしました。',
+  'Call': '電話',
+  'Cancel': 'キャンセル',
+  'Cell row {0}, col {1} is already a house ({2}), so the {3} was skipped.': '{0}行 {1}列 はすでに家（{2}）なので、{3} はスキップしました。',
+  'Cell type': 'マスの種類',
+  'Changes': '変更内容',
+  'Chat': 'トーク',
+  'Choose an emoji': '絵文字を選ぶ',
+  'Choose': '選ぶ',
+  'Clear': 'クリア',
+  'Close': '閉じる',
+  'Color': '色',
+  'Column': '列',
+  'Converted and imported.': '変換して読み込みました。',
+  'Could not import: {0}': '読み込めませんでした：{0}',
+  'Decoration emoji (replaces the icon)': '飾りの絵文字（アイコンの代わり）',
+  'Decoration rows need an emoji in the Icon column.': '飾りの行には Icon 列に絵文字が必要です。',
+  'Decoration {0}': '飾り {0}',
+  'Decoration': '飾り',
+  'Delete resident': '住民を削除',
+  'Delete section "{0}"?': '区画「{0}」を削除しますか？',
+  'Delete section': '区画を削除',
+  'Delete {0}?': '{0} を削除しますか？',
+  'Delete': '削除',
+  'Deleted.': '削除しました。',
+  'Done': '完了',
+  'Download backup file': 'バックアップファイルをダウンロード',
+  'Downloads a calendar file. Open it on your iPhone or Mac and choose Add All. Every birthday repeats yearly with a reminder.': 'カレンダーファイルをダウンロードします。iPhone や Mac で開いて「すべて追加」を選んでください。誕生日は毎年くり返し、通知も付きます。',
+  'Edit House': '家を編集',
+  'Edit Map · tap cells to change them': 'マップ編集 · マスをタップして変更',
+  'Edit Map': 'マップ編集',
+  'Edit section': '区画を編集',
+  'Email': 'メール',
+  'Empty cell, row {0}, column {1}': '空きマス（{0}行 {1}列）',
+  'Erase the whole map': 'マップをすべて消去',
+  'Erase the whole map?': 'マップをすべて消去しますか？',
+  'Erase': '消去',
+  'Everything stays on this device. There is no account and no server.': 'データはすべてこの端末の中だけに保存されます。アカウントもサーバーもありません。',
+  'Export CSV (for Excel)': 'CSV を書き出す（Excel 用）',
+  'Export CSV': 'CSV を書き出す',
+  'Family role': '家族の続柄',
+  'First name': '名',
+  'Gender "{0}" is not understood (Male, Female or Other). {1} was not imported.': '性別「{0}」は読めません（Male / Female / Other）。{1} は読み込まれませんでした。',
+  'Gender': '性別',
+  'Grass cells': '草のマス',
+  'Grass': '草',
+  'House added': '家を追加しました',
+  'House icon': '家のアイコン',
+  'House name': '家の名前',
+  'House {0}': '家 {0}',
+  'House': '家',
+  'I could not recognize this file. It needs a header row such as Kind,Section,HouseName,Row,Col…': 'このファイルを認識できませんでした。Kind,Section,HouseName,Row,Col… のようなヘッダー行が必要です。',
+  'If LINE does not open, the ID is copied so you can search for it in LINE.': 'LINE が開かないときは ID をコピーするので、LINE で検索できます。',
+  'Import CSV or backup…': 'CSV／バックアップを読み込む…',
+  'Import preview': '読み込みプレビュー',
+  'Imported.': '読み込みました。',
+  'Import…': '読み込む…',
+  'In {0} days': '{0}日後',
+  'LINE ID': 'LINE ID',
+  'LINE did not open. The ID "{0}" was copied.': 'LINE が開きませんでした。ID「{0}」をコピーしました。',
+  'Language': '言語',
+  'Last backup file: {0}': '最後のバックアップファイル：{0}',
+  'Last name': '姓',
+  'Loading…': '読み込み中…',
+  'Looks good.': '問題ありません。',
+  'Manual backup': '手動バックアップ',
+  'Map erased.': 'マップを消去しました。',
+  'Map replaced.': 'マップを置き換えました。',
+  'Map': 'マップ',
+  'Menu': 'メニュー',
+  'Message on LINE': 'LINE でメッセージ',
+  'Mint fills empty cells with soft green. Plain shows only a dashed outline.': 'ミントは空きマスをやさしい緑で塗ります。プレーンは点線の枠だけです。',
+  'Mint': 'ミント',
+  'More': 'もっと',
+  'Move': '移動',
+  'Moved': '移動しました',
+  'Neighbor birthdays': 'ご近所の誕生日',
+  'New house: {0}': '新しい家：{0}',
+  'New person: {0} ({1})': '新しい人：{0}（{1}）',
+  'New resident': '新しい住民',
+  'New section': '新しい区画',
+  'New section: {0}': '新しい区画：{0}',
+  'No LINE IDs saved': 'LINE ID が登録されていません',
+  'No backups yet.': 'バックアップはまだありません。',
+  'No birthdays in the next 120 days.': '今後120日以内の誕生日はありません。',
+  'No birthdays to export yet.': '書き出せる誕生日がまだありません。',
+  'No header row found. The first row must contain column names such as HouseName.': 'ヘッダー行が見つかりません。1行目に HouseName などの列名が必要です。',
+  'No residents yet': '住民はまだいません',
+  'No section': '区画なし',
+  'Not saved: {0}': '保存できませんでした：{0}',
+  'Notes': 'メモ',
+  'Nothing would change.': '変更はありません。',
+  'Now tap an empty cell.': '次に空きマスをタップしてください。',
+  'Now tap cells to put them in "{0}".': '「{0}」に入れるマスをタップしてください。',
+  'OK': 'OK',
+  'Only the colored area and its name are removed. Houses are not touched.': '色のついた範囲と名前だけが消えます。家はそのままです。',
+  'Open Residents and edit a person to add their LINE ID.': '住民を開いて、人を編集し LINE ID を追加してください。',
+  'Open in browser': 'ブラウザで開く',
+  'Phone': '電話',
+  'Pick a cell type below first.': '先に下からマスの種類を選んでください。',
+  'Pick a type, then tap cells.': '種類を選んで、マスをタップしてください。',
+  'Pick an empty cell.': '空きマスを選んでください。',
+  'Plain': 'プレーン',
+  'Please enter a name.': '名前を入力してください。',
+  'Recent': '最近',
+  'Reminder time (for the calendar file)': '通知の時刻（カレンダーファイル用）',
+  'Remove photo': '写真を削除',
+  'Replace everything with this file': 'このファイルですべて置き換える',
+  'Replace everything?': 'すべて置き換えますか？',
+  'Replace': '置き換え',
+  'Resident': '住民',
+  'Residents': '住民',
+  'Restore this backup?': 'このバックアップを復元しますか？',
+  'Restore': '復元',
+  'Restored.': '復元しました。',
+  'Road': '道路',
+  'Road, row {0}, column {1}': '道路（{0}行 {1}列）',
+  'Role "{0}" is not understood (Grandparent, Parent, Child or Other). {1} was not imported.': '続柄「{0}」は読めません（Grandparent / Parent / Child / Other）。{1} は読み込まれませんでした。',
+  'Row {0}: ': '{0}行目：',
+  'Row': '行',
+  'Row/Col "{0}/{1}" is not a valid position. The house keeps its place.': '行/列「{0}/{1}」は正しい位置ではありません。家は元の場所のままです。',
+  'Rows I could not read ({0})': '読めなかった行（{0}）',
+  'Save': '保存',
+  'Saved on this device': 'この端末に保存済み',
+  'Saved': '保存済み',
+  'Section name': '区画の名前',
+  'Section {0}': '区画 {0}',
+  'Section': '区画',
+  'Settings': '設定',
+  'Streets in Japan often have no name. A section is any named area you paint on the map.': '日本の道には名前がないことが多いので、区画はマップに塗って名前をつけられるエリアです。',
+  'Tap a cell, then an empty cell.': 'マスをタップして、次に空きマスをタップ。',
+  'Tap an empty cell to move {0}': '{0} の移動先の空きマスをタップ',
+  'Tap cells to paint. Painting over a house removes it and its people (Undo brings it back).': 'マスをタップして塗ります。家の上に塗ると家と住民が消えます（元に戻すで復活）。',
+  'Tap cells to put them in the chosen section.': 'マスをタップして選んだ区画に入れます。',
+  'Tap the cell you want to move first.': '先に移動したいマスをタップしてください。',
+  'That is not an emoji.': '絵文字ではありません。',
+  'The browser has promised not to clear this data automatically.': 'ブラウザはこのデータを自動で消さないと約束しています。',
+  'The browser may clear this data if the device runs low on space. Download a backup file now and then.': '端末の空き容量が少なくなると、ブラウザがこのデータを消すことがあります。ときどきバックアップファイルをダウンロードしてください。',
+  'The file is empty.': 'ファイルが空です。',
+  'The map becomes exactly what is in the file ({0} houses, {1} people). A backup is made first.': 'マップはファイルの内容そのものになります（家 {0} 軒、{1} 人）。先にバックアップを作ります。',
+  'These rows are skipped. Fix them in the spreadsheet and import again if you need them.': 'これらの行はスキップされます。必要ならスプレッドシートで直して、もう一度読み込んでください。',
+  'This JSON file is not a NeighborhoodSkout file.': 'この JSON ファイルは NeighborhoodSkout のファイルではありません。',
+  'This is a CSV from the old street-based app. It will be converted to the new grid: every street becomes a section.': '旧バージョン（通りベース）の CSV です。新しいグリッドに変換され、通りはすべて区画になります。',
+  'This is data from the old street-based app. It will be converted to the new grid: every street becomes a section.': '旧バージョン（通りベース）のデータです。新しいグリッドに変換され、通りはすべて区画になります。',
+  'Today': '今日',
+  'Tomorrow': '明日',
+  'Try again': 'もう一度',
+  'Type or paste any emoji. On iPhone use the emoji keyboard, on Mac press Control + Command + Space.': '好きな絵文字を入力またはペーストしてください。iPhone は絵文字キーボード、Mac は Control + Command + Space です。',
+  'Undo': '元に戻す',
+  'Undone': '元に戻しました',
+  'Unknown Kind "{0}". Use House, Road or Decoration.': 'Kind「{0}」は不明です。House / Road / Decoration を使ってください。',
+  'Upcoming birthdays': '近日中の誕生日',
+  'Use this': 'これを使う',
+  'Used for the green LINE button.': '緑の LINE ボタンに使います。',
+  'Your current map is backed up first, and you can undo.': '現在のマップは先にバックアップされ、元に戻せます。',
+  'Your current map is backed up first.': '現在のマップは先にバックアップされます。',
+  'Your current map is replaced by this file. A backup is made first.': '現在のマップはこのファイルに置き換わります。先にバックアップを作ります。',
+  'Your data': 'データ',
+  'Your latest change could not be saved: {0}': '最新の変更を保存できませんでした：{0}',
+  'birthday': '誕生日',
+  'color {0} → {1}': '色 {0} → {1}',
+  'decoration {0} → {1}': '飾り {0} → {1}',
+  'decoration': '飾り',
+  'e.g. North side': '例：北側',
+  'email': 'メール',
+  'first name': '名',
+  'gender': '性別',
+  'has a dog, likes tea…': '犬を飼っている、お茶好き…',
+  'icon {0} → {1}': 'アイコン {0} → {1}',
+  'last name': '姓',
+  'name "{0}" → "{1}"': '名前「{0}」→「{1}」',
+  'never': 'なし',
+  'notes': 'メモ',
+  'or': 'または',
+  'phone': '電話',
+  'read as {0}': '{0} として読み取り',
+  'road': '道路',
+  'role': '続柄',
+  'their LINE ID, without ~': 'LINE ID（~ は不要）',
+  'this person': 'この人',
+  'turns {0}': '{0}歳になります',
+  '{0} LINE contacts': 'LINE の連絡先 {0} 件',
+  '{0} cells': '{0} マス',
+  '{0} deleted.': '{0} を削除しました。',
+  '{0} home': '{0} 軒',
+  '{0} homes': '{0} 軒',
+  '{0} houses updated': '家 {0} 軒を更新',
+  '{0} houses': '家 {0} 軒',
+  '{0} moved to row {1}, col {2}': '{0} を {1}行 {2}列 へ移動',
+  '{0} new houses': '新しい家 {0} 軒',
+  '{0} new people': '新しい人 {0} 人',
+  '{0} people updated': '{0} 人を更新',
+  '{0} people': '{0} 人',
+  '{0} photos included.': '写真 {0} 枚を含みます。',
+  '{0} resident': '住民 {0} 人',
+  '{0} residents': '住民 {0} 人',
+  '{0} road/decoration cells set': '道路・飾り {0} マスを設定',
+  '{0} road/decoration cells': '道路・飾り {0} マス',
+  '{0} rows need valid Row and Col numbers.': '{0} 行に正しい Row と Col の数字が必要です。',
+  '{0} sections': '区画 {0} か所',
+  '{0} wanted row {1}, col {2}, but that cell is taken. It was put at row {3}, col {4}.': '{0} は {1}行 {2}列 を希望しましたが、すでに使われているため {3}行 {4}列 に置きました。',
+  '{0} was removed together with its {1} people.': '{0} と住民 {1} 人を削除しました。',
+  '{0} yrs': '{0}歳',
+  '…and {0} more.': '…ほか {0} 件。',
+  '🎂 Birthday in {0} days': '🎂 誕生日まであと{0}日',
+  '🎂 Birthday today!': '🎂 今日は誕生日！',
+};
+
+// ===== Utilities =====
+const $ = (sel, el = document) => el.querySelector(sel);
+
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  if (props) {
+    for (const [k, v] of Object.entries(props)) {
+      if (v === null || v === undefined || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+      else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+      else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'selected' || k === 'textContent') el[k] = v;
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+  }
+  const add = (kid) => {
+    if (kid === null || kid === undefined || kid === false) return;
+    if (Array.isArray(kid)) kid.forEach(add);
+    else if (kid instanceof Node) el.appendChild(kid);
+    else el.appendChild(document.createTextNode(String(kid)));
+  };
+  kids.forEach(add);
+  return el;
+}
+
+function uid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID().toUpperCase();
+  const b = (n) => Math.floor(Math.random() * 16 ** n).toString(16).padStart(n, '0');
+  return `${b(8)}-${b(4)}-4${b(3)}-a${b(3)}-${b(12)}`.toUpperCase();
+}
+const normId = (s) => String(s || '').trim().toUpperCase();
+const nowISO = () => new Date().toISOString();
+const pad2 = (n) => String(n).padStart(2, '0');
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const lc = (s) => String(s || '').trim().toLowerCase();
+
+// ----- dates (birthdays are stored as plain 'YYYY-MM-DD' strings) -----
+function ymdFromDate(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+function validYMD(y, m, d) {
+  if (!(y >= 1900 && y <= new Date().getFullYear() + 1)) return false;
+  if (!(m >= 1 && m <= 12)) return false;
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+// Accepts 2024-05-03, 2024/5/3, 2024.5.3, 2024年5月3日, 5/3/2024 (month first), 25/12/2000 (day first when >12),
+// and ISO timestamps like 1980-01-14T15:00:00Z (converted to the local date). Returns 'YYYY-MM-DD' or null.
+function parseDateLoose(input) {
+  const s = String(input || '').trim();
+  if (!s) return '';
+  let m;
+  if ((m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/)) || (m = s.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日?$/))) {
+    const y = +m[1], mo = +m[2], d = +m[3];
+    return validYMD(y, mo, d) ? `${y}-${pad2(mo)}-${pad2(d)}` : null;
+  }
+  if ((m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/))) {
+    let a = +m[1], b = +m[2]; const y = +m[3];
+    let mo = a, d = b;
+    if (a > 12 && b <= 12) { mo = b; d = a; }
+    return validYMD(y, mo, d) ? `${y}-${pad2(mo)}-${pad2(d)}` : null;
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const dt = new Date(s);
+    if (isNaN(dt)) return null;
+    const out = ymdFromDate(dt);
+    const [y, mo, d] = out.split('-').map(Number);
+    return validYMD(y, mo, d) ? out : null;
+  }
+  return null;
+}
+function splitYMD(s) { const [y, m, d] = s.split('-').map(Number); return { y, m, d }; }
+
+function download(filename, content, mime) {
+  const blob = content instanceof Blob ? content : new Blob([content], { type: mime || 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = h('a', { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fall through */ }
+  try {
+    const ta = h('textarea', { value: text, style: { position: 'fixed', opacity: 0 } });
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy'); ta.remove(); return ok;
+  } catch (e) { return false; }
+}
+
+function pickFile(accept, multiple) {
+  return new Promise((resolve) => {
+    const inp = h('input', { type: 'file', accept: accept || '', style: { display: 'none' } });
+    if (multiple) inp.multiple = true;
+    inp.addEventListener('change', () => { resolve(inp.files && inp.files[0] ? inp.files[0] : null); inp.remove(); });
+    inp.addEventListener('cancel', () => { resolve(null); inp.remove(); });
+    document.body.appendChild(inp);
+    inp.click();
+  });
+}
+
+// Is this text a single emoji (or an emoji sequence like a flag or a family)?
+function firstEmoji(text) {
+  const s = String(text || '').trim();
+  if (!s) return null;
+  const seg = (typeof Intl !== 'undefined' && Intl.Segmenter)
+    ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s)].map((x) => x.segment)
+    : Array.from(s);
+  const re = /\p{Extended_Pictographic}|\p{Regional_Indicator}|⃣/u;
+  for (const g of seg) { if (re.test(g)) return g; }
+  return null;
+}
+
+// ===== Constants, storage, state, undo, backups, photos =====
+const APP_VERSION = '2.0 (web)';
+const COLORS = ['purple', 'teal', 'coral', 'pink', 'blue', 'green', 'orange', 'red'];
+const HOUSE_ICONS = ['🏠', '🏡', '🏘️', '🏚️', '🏗️', '🏢', '🏣', '🏤'];
+const SECTION_COLORS = ['blue', 'orange', 'teal', 'pink', 'purple', 'green', 'coral', 'red'];
+const ROLES = ['Grandparent', 'Parent', 'Child', 'Other'];
+const GENDERS = ['Male', 'Female', 'Other'];
+const ROLE_ICON = { Grandparent: '👴', Parent: '👪', Child: '🧒', Other: '🧑' };
+const GENDER_ICON = { Male: '👨', Female: '👩', Other: '🧑' };
+const ZOOMS = [0.6, 0.75, 1, 1.25, 1.5, 1.8, 2.2];
+const GAP = 3;
+const MAX_ROWS = 80, MAX_COLS = 30;
+const DEFAULT_SETTINGS = {
+  grass: 'mint', lang: 'auto', birthdayHour: 9, dayBefore: false,
+  favorites: ['🌳', '⛩️', '🪧', '🌸'], recent: [], zoom: 2, lastFileBackup: null,
+};
+
+// ----- key/value storage: IndexedDB first, localStorage as a fallback -----
+let db = null;
+let usingFallback = false;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB is not available')); return; }
+    let rq;
+    try { rq = indexedDB.open('neighborhoodskout', 1); } catch (e) { reject(e); return; }
+    rq.onupgradeneeded = () => { rq.result.createObjectStore('kv'); };
+    rq.onsuccess = () => resolve(rq.result);
+    rq.onerror = () => reject(rq.error);
+    rq.onblocked = () => reject(new Error('blocked'));
+  });
+}
+function idbReq(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('kv', mode);
+    const store = tx.objectStore('kv');
+    let result;
+    const rq = fn(store);
+    if (rq) rq.onsuccess = () => { result = rq.result; };
+    tx.oncomplete = () => resolve(result);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('aborted'));
+  });
+}
+const LS_PREFIX = 'nsk:';
+const kv = {
+  async get(k) {
+    if (!usingFallback) return idbReq('readonly', (s) => s.get(k));
+    const raw = localStorage.getItem(LS_PREFIX + k);
+    return raw === null ? undefined : JSON.parse(raw);
+  },
+  async set(k, v) {
+    if (!usingFallback) return idbReq('readwrite', (s) => s.put(v, k));
+    localStorage.setItem(LS_PREFIX + k, JSON.stringify(v));
+  },
+  async del(k) {
+    if (!usingFallback) return idbReq('readwrite', (s) => s.delete(k));
+    localStorage.removeItem(LS_PREFIX + k);
+  },
+  async keys() {
+    if (!usingFallback) return idbReq('readonly', (s) => s.getAllKeys());
+    return Object.keys(localStorage).filter((k) => k.startsWith(LS_PREFIX)).map((k) => k.slice(LS_PREFIX.length));
+  },
+};
+
+// ----- state -----
+let S = blankState();
+let settings = clone(DEFAULT_SETTINGS);
+let blockIndex = new Map();      // "r,c" -> block
+let saveStatus = { ok: true, at: null, error: null, persisted: null };
+
+function blankState() {
+  return { version: 2, columns: 6, rows: 16, blocks: [], sections: [], savedAt: null };
+}
+function normalizeState(s) {
+  const out = blankState();
+  if (!s || typeof s !== 'object') return out;
+  out.columns = Math.max(6, Math.min(MAX_COLS, s.columns | 0 || 6));
+  out.rows = Math.max(4, Math.min(MAX_ROWS, s.rows | 0 || 16));
+  out.blocks = (Array.isArray(s.blocks) ? s.blocks : []).map((b) => ({
+    id: b.id || uid(), kind: b.kind === 'road' || b.kind === 'decoration' ? b.kind : 'house',
+    row: b.row | 0, col: b.col | 0,
+    houseName: b.houseName || '', colorName: COLORS.includes(b.colorName) ? b.colorName : 'purple',
+    icon: b.icon || '🏠', decoration: b.decoration || null,
+    residents: (Array.isArray(b.residents) ? b.residents : []).map(normPerson),
+    lastModified: b.lastModified || nowISO(),
+  }));
+  out.sections = (Array.isArray(s.sections) ? s.sections : []).map((x) => ({
+    id: x.id || uid(), name: x.name || '', colorName: COLORS.includes(x.colorName) ? x.colorName : 'blue',
+    cells: (Array.isArray(x.cells) ? x.cells : []).map((c) => [c[0] | 0, c[1] | 0]),
+    lastModified: x.lastModified || nowISO(),
+  }));
+  out.savedAt = s.savedAt || null;
+  // grow the grid if any block sits outside it, so nothing is ever hidden
+  for (const b of out.blocks) {
+    if (b.row >= out.rows) out.rows = Math.min(MAX_ROWS, b.row + 1);
+    if (b.col >= out.columns) out.columns = Math.min(MAX_COLS, b.col + 1);
+  }
+  return out;
+}
+function normPerson(p) {
+  return {
+    id: p.id || uid(), firstName: p.firstName || '', lastName: p.lastName || '',
+    gender: GENDERS.includes(p.gender) ? p.gender : 'Other',
+    role: ROLES.includes(p.role) ? p.role : 'Other',
+    birthday: p.birthday || '', lineId: p.lineId || '', phone: p.phone || '',
+    email: p.email || '', notes: p.notes || '', lastModified: p.lastModified || nowISO(),
+  };
+}
+function reindex() {
+  blockIndex = new Map();
+  for (const b of S.blocks) blockIndex.set(`${b.row},${b.col}`, b);
+}
+const blockAt = (r, c) => blockIndex.get(`${r},${c}`) || null;
+const blockById = (id) => S.blocks.find((b) => b.id === id) || null;
+const houses = () => S.blocks.filter((b) => b.kind === 'house');
+function sectionAt(r, c) { return S.sections.find((x) => x.cells.some((p) => p[0] === r && p[1] === c)) || null; }
+function sectionOfBlock(b) { return b ? sectionAt(b.row, b.col) : null; }
+function findPerson(personId) {
+  for (const b of S.blocks) for (const p of b.residents) if (p.id === personId) return { block: b, person: p };
+  return null;
+}
+
+// ----- saving (every change, immediately, with a visible error if it fails) -----
+let saveTimer = null;
+let onSaveStatus = () => {};
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 40);
+}
+async function doSave() {
+  clearTimeout(saveTimer);
+  try {
+    S.savedAt = nowISO();
+    await kv.set('state', S);
+    saveStatus = { ...saveStatus, ok: true, at: new Date(), error: null };
+  } catch (e) {
+    saveStatus = { ...saveStatus, ok: false, error: String(e && e.message || e) };
+  }
+  onSaveStatus();
+}
+async function saveSettings() {
+  try { await kv.set('settings', settings); } catch (e) { saveStatus = { ...saveStatus, ok: false, error: String(e && e.message || e) }; onSaveStatus(); }
+}
+function flushSave() { if (saveTimer) doSave(); }
+
+// ----- undo (in memory, last 20 changes) -----
+const history = [];
+let strokeOpen = false, strokePushed = false;
+function pushUndo() {
+  if (strokeOpen) { if (strokePushed) return; strokePushed = true; }
+  history.push(JSON.stringify(S));
+  if (history.length > 20) history.shift();
+}
+function beginStroke() { strokeOpen = true; strokePushed = false; }
+function endStroke() { strokeOpen = false; strokePushed = false; }
+function canUndo() { return history.length > 0; }
+function undo() {
+  if (!history.length) return false;
+  S = normalizeState(JSON.parse(history.pop()));
+  reindex(); scheduleSave();
+  return true;
+}
+function clearHistory() { history.length = 0; }
+
+// ----- backups (kept inside the browser, up to 10 automatic + 10 manual) -----
+async function getBackups() { return (await kv.get('backups').catch(() => null)) || []; }
+async function addBackup(label, kind) {
+  if (!S.blocks.length && !S.sections.length) return null;
+  const list = await getBackups();
+  const entry = {
+    id: uid(), at: nowISO(), label, kind, houses: houses().length,
+    people: S.blocks.reduce((n, b) => n + b.residents.length, 0), json: JSON.stringify(S),
+  };
+  list.unshift(entry);
+  const keep = [];
+  let auto = 0, manual = 0;
+  for (const b of list) {
+    if (b.kind === 'manual') { if (manual++ < 10) keep.push(b); }
+    else if (auto++ < 10) keep.push(b);
+  }
+  await kv.set('backups', keep);
+  return entry;
+}
+async function deleteBackup(id) {
+  const list = (await getBackups()).filter((b) => b.id !== id);
+  await kv.set('backups', list);
+}
+
+// ----- photos (stored as small JPEG blobs, one per house or person id) -----
+const photoUrls = new Map();     // id -> object URL
+async function loadPhotos() {
+  if (usingFallback) return;
+  const keys = await kv.keys();
+  for (const k of keys) {
+    if (typeof k === 'string' && k.startsWith('photo:')) {
+      const blob = await kv.get(k);
+      if (blob) photoUrls.set(k.slice(6), URL.createObjectURL(blob));
+    }
+  }
+}
+async function setPhoto(id, blob) {
+  if (usingFallback) throw new Error('Photos need browser storage, which is not available here.');
+  await kv.set('photo:' + id, blob);
+  if (photoUrls.has(id)) URL.revokeObjectURL(photoUrls.get(id));
+  photoUrls.set(id, URL.createObjectURL(blob));
+}
+async function removePhoto(id) {
+  if (photoUrls.has(id)) { URL.revokeObjectURL(photoUrls.get(id)); photoUrls.delete(id); }
+  if (!usingFallback) await kv.del('photo:' + id);
+}
+const photoOf = (id) => photoUrls.get(id) || null;
+
+function loadImage(url) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Could not read that image')); i.src = url; });
+}
+async function resizeImage(file, max = 720) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * scale)), hh = Math.max(1, Math.round(img.naturalHeight * scale));
+    const c = h('canvas', { width: w, height: hh });
+    c.getContext('2d').drawImage(img, 0, 0, w, hh);
+    return await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('Could not convert the image'))), 'image/jpeg', 0.82));
+  } finally { URL.revokeObjectURL(url); }
+}
+function blobToDataURL(blob) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+}
+async function dataURLToBlob(url) { return (await fetch(url)).blob(); }
+
+// ----- startup -----
+async function initStorage() {
+  try { db = await openDB(); await idbReq('readonly', (s) => s.get('state')); }
+  catch (e) { usingFallback = true; saveStatus.error = 'Browser storage is unavailable, using a smaller fallback. Photos will not be saved.'; }
+  const savedSettings = await kv.get('settings').catch(() => null);
+  settings = { ...clone(DEFAULT_SETTINGS), ...(savedSettings || {}) };
+  const savedState = await kv.get('state').catch(() => null);
+  S = savedState ? normalizeState(savedState) : blankState();
+  reindex();
+  await loadPhotos().catch(() => {});
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      saveStatus.persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist());
+    }
+  } catch (e) { /* not available */ }
+  // automatic backup once per hour at most, and always before the first change in a session
+  try {
+    const list = await getBackups();
+    const lastAuto = list.find((b) => b.kind === 'auto');
+    if (S.blocks.length && (!lastAuto || Date.now() - new Date(lastAuto.at).getTime() > 3600 * 1000)) await addBackup('Automatic backup', 'auto');
+  } catch (e) { /* ignore */ }
+}
+
+// ===== Map and people changes, birthdays, v1 conversion =====
+let onChange = () => {};
+
+function mutate(fn, opts = {}) {
+  if (opts.undo !== false) pushUndo();
+  fn();
+  reindex();
+  scheduleSave();
+  onChange();
+}
+const touch = (obj) => { obj.lastModified = nowISO(); return obj; };
+
+function firstEmptyCell() {
+  for (let r = 0; r < S.rows; r++) for (let c = 0; c < S.columns; c++) if (!blockAt(r, c)) return [r, c];
+  return null;
+}
+function ensureRoom() { // add a row if the grid is completely full
+  if (!firstEmptyCell() && S.rows < MAX_ROWS) S.rows++;
+}
+
+function newHouseBlock(r, c) {
+  const hs = houses();
+  let n = hs.length + 1;
+  const names = new Set(hs.map((b) => b.houseName));
+  while (names.has(t('House {0}', n))) n++;
+  return {
+    id: uid(), kind: 'house', row: r, col: c, houseName: t('House {0}', n),
+    colorName: COLORS[(hs.length) % COLORS.length], icon: HOUSE_ICONS[(hs.length) % HOUSE_ICONS.length],
+    decoration: null, residents: [], lastModified: nowISO(),
+  };
+}
+function removeBlockAt(r, c) { S.blocks = S.blocks.filter((b) => !(b.row === r && b.col === c)); }
+
+// Tap on empty grass in normal mode.
+function createHouseAt(r, c) {
+  let created = null;
+  mutate(() => { created = newHouseBlock(r, c); S.blocks.push(created); });
+  return created;
+}
+
+// Edit Map painting. tool: {type:'grass'|'road'|'house'|'emoji'|'section', emoji?, sectionId?}
+// Returns true if something changed.
+function paintCell(r, c, tool) {
+  if (r < 0 || c < 0 || r >= S.rows || c >= S.columns) return false;
+  const cur = blockAt(r, c);
+  if (tool.type === 'section') {
+    const target = tool.sectionId ? S.sections.find((x) => x.id === tool.sectionId) : null;
+    const now = sectionAt(r, c);
+    if ((now && now.id) === (target && target.id)) return false;
+    mutate(() => {
+      for (const x of S.sections) {
+        const i = x.cells.findIndex((p) => p[0] === r && p[1] === c);
+        if (i >= 0) { x.cells.splice(i, 1); touch(x); }
+      }
+      if (target) { target.cells.push([r, c]); touch(target); }
+    });
+    return true;
+  }
+  if (tool.type === 'grass') {
+    if (!cur) return false;
+    mutate(() => removeBlockAt(r, c));
+    return true;
+  }
+  if (tool.type === 'road') {
+    if (cur && cur.kind === 'road') return false;
+    mutate(() => { removeBlockAt(r, c); S.blocks.push({ id: uid(), kind: 'road', row: r, col: c, houseName: '', colorName: 'purple', icon: '', decoration: null, residents: [], lastModified: nowISO() }); });
+    return true;
+  }
+  if (tool.type === 'house') {
+    if (cur && cur.kind === 'house') return false;
+    mutate(() => { removeBlockAt(r, c); S.blocks.push(newHouseBlock(r, c)); });
+    return true;
+  }
+  if (tool.type === 'emoji') {
+    if (cur && cur.kind === 'decoration' && cur.icon === tool.emoji) return false;
+    mutate(() => { removeBlockAt(r, c); S.blocks.push({ id: uid(), kind: 'decoration', row: r, col: c, houseName: '', colorName: 'purple', icon: tool.emoji, decoration: null, residents: [], lastModified: nowISO() }); });
+    return true;
+  }
+  return false;
+}
+
+function moveBlock(id, r, c) {
+  const b = blockById(id);
+  if (!b || blockAt(r, c) || r < 0 || c < 0 || r >= S.rows || c >= S.columns) return false;
+  mutate(() => { b.row = r; b.col = c; touch(b); });
+  return true;
+}
+function deleteBlock(id) {
+  const b = blockById(id);
+  if (!b) return;
+  mutate(() => { S.blocks = S.blocks.filter((x) => x.id !== id); });
+}
+function updateHouse(id, fields) {
+  const b = blockById(id);
+  if (!b) return;
+  mutate(() => { Object.assign(b, fields); touch(b); });
+}
+
+// ----- rows and columns -----
+function addRow() { if (S.rows >= MAX_ROWS) return false; mutate(() => { S.rows++; }); return true; }
+function addColumn() { if (S.columns >= MAX_COLS) return false; mutate(() => { S.columns++; }); return true; }
+function canRemoveRow() { return S.rows > 4 && !S.blocks.some((b) => b.row === S.rows - 1); }
+function canRemoveColumn() { return S.columns > 6 && !S.blocks.some((b) => b.col === S.columns - 1); }
+function removeRow() {
+  if (!canRemoveRow()) return false;
+  mutate(() => { S.rows--; for (const x of S.sections) x.cells = x.cells.filter((p) => p[0] < S.rows); });
+  return true;
+}
+function removeColumn() {
+  if (!canRemoveColumn()) return false;
+  mutate(() => { S.columns--; for (const x of S.sections) x.cells = x.cells.filter((p) => p[1] < S.columns); });
+  return true;
+}
+
+// ----- sections -----
+function addSection(name, colorName) {
+  const sec = { id: uid(), name, colorName, cells: [], lastModified: nowISO() };
+  mutate(() => { S.sections.push(sec); }, { undo: false });
+  return sec;
+}
+function updateSection(id, fields) {
+  const x = S.sections.find((s) => s.id === id);
+  if (!x) return;
+  mutate(() => { Object.assign(x, fields); touch(x); }, { undo: false });
+}
+function deleteSection(id) { mutate(() => { S.sections = S.sections.filter((s) => s.id !== id); }); }
+function sectionAnchor(sec) { // the top-left cell, where the name chip is drawn
+  let best = null;
+  for (const p of sec.cells) if (!best || p[0] < best[0] || (p[0] === best[0] && p[1] < best[1])) best = p;
+  return best;
+}
+function nextSectionColor() {
+  const used = S.sections.map((s) => s.colorName);
+  return SECTION_COLORS.find((c) => !used.includes(c)) || SECTION_COLORS[S.sections.length % SECTION_COLORS.length];
+}
+
+// ----- people -----
+function blankPerson() {
+  return normPerson({ id: uid(), firstName: '', lastName: '', gender: 'Female', role: 'Parent' });
+}
+function savePerson(houseId, person) {
+  const b = blockById(houseId);
+  if (!b) return;
+  mutate(() => {
+    touch(person);
+    const i = b.residents.findIndex((p) => p.id === person.id);
+    if (i >= 0) b.residents[i] = person; else b.residents.push(person);
+    touch(b);
+  }, { undo: false });
+}
+function deletePerson(houseId, personId) {
+  const b = blockById(houseId);
+  if (!b) return;
+  mutate(() => { b.residents = b.residents.filter((p) => p.id !== personId); touch(b); });
+}
+const fullName = (p) => [p.firstName, p.lastName].filter(Boolean).join(' ').trim();
+function ageOn(person, today = new Date()) {
+  if (!person.birthday) return null;
+  const { y, m, d } = splitYMD(person.birthday);
+  let age = today.getFullYear() - y;
+  if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
+  return age;
+}
+
+// ----- birthdays -----
+function nextBirthday(person, today = new Date()) {
+  if (!person.birthday) return null;
+  const { y, m, d } = splitYMD(person.birthday);
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const make = (yr) => {
+    let dd = d, mm = m;
+    if (m === 2 && d === 29 && !(yr % 4 === 0 && (yr % 100 !== 0 || yr % 400 === 0))) dd = 28;
+    return new Date(yr, mm - 1, dd);
+  };
+  let when = make(t0.getFullYear());
+  if (when < t0) when = make(t0.getFullYear() + 1);
+  return { date: when, days: Math.round((when - t0) / 86400000), turns: when.getFullYear() - y };
+}
+function upcomingBirthdays(withinDays = 60, today = new Date()) {
+  const out = [];
+  for (const b of S.blocks) {
+    if (b.kind !== 'house') continue;
+    for (const p of b.residents) {
+      const nb = nextBirthday(p, today);
+      if (nb && nb.days <= withinDays) out.push({ person: p, block: b, ...nb });
+    }
+  }
+  return out.sort((a, b) => a.days - b.days || fullName(a.person).localeCompare(fullName(b.person)));
+}
+function houseHasBirthdaySoon(b, days = 7) {
+  return b.kind === 'house' && b.residents.some((p) => { const nb = nextBirthday(p); return nb && nb.days <= days; });
+}
+function placeLabel(b) {
+  const sec = sectionOfBlock(b);
+  return sec && sec.name ? `${b.houseName} (${sec.name})` : b.houseName;
+}
+
+function icsEscape(s) { return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+function foldLine(line) {
+  const out = []; let cur = '';
+  for (const ch of line) { if ((cur + ch).length > 70) { out.push(cur); cur = ' ' + ch; } else cur += ch; }
+  out.push(cur);
+  return out.join('\r\n');
+}
+// A calendar file with one yearly all-day event per birthday, each with a reminder.
+function buildBirthdayICS() {
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//NeighborhoodSkout//Birthdays//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + icsEscape(t('Neighbor birthdays'))];
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const hr = settings.birthdayHour | 0;
+  let n = 0;
+  for (const b of S.blocks) {
+    if (b.kind !== 'house') continue;
+    for (const p of b.residents) {
+      const nb = nextBirthday(p);
+      if (!nb) continue;
+      n++;
+      const ds = `${nb.date.getFullYear()}${pad2(nb.date.getMonth() + 1)}${pad2(nb.date.getDate())}`;
+      const { y, m, d } = splitYMD(p.birthday);
+      lines.push('BEGIN:VEVENT');
+      lines.push(`UID:${p.id}@neighborhoodskout`);
+      lines.push(`DTSTAMP:${stamp}`);
+      lines.push(`DTSTART;VALUE=DATE:${ds}`);
+      lines.push('RRULE:FREQ=YEARLY');
+      lines.push(foldLine('SUMMARY:' + icsEscape(`🎂 ${fullName(p) || '?'} — ${placeLabel(b)}`)));
+      lines.push(foldLine('DESCRIPTION:' + icsEscape(`${fullName(p)} · ${placeLabel(b)} · ${y}-${pad2(m)}-${pad2(d)}`)));
+      lines.push('TRANSP:TRANSPARENT');
+      lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', foldLine('DESCRIPTION:' + icsEscape(`🎂 ${fullName(p)}`)), `TRIGGER:PT${hr}H`, 'END:VALARM');
+      if (settings.dayBefore) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', foldLine('DESCRIPTION:' + icsEscape(`🎂 ${fullName(p)} (tomorrow)`)), `TRIGGER:-PT${24 - hr}H`, 'END:VALARM');
+      lines.push('END:VEVENT');
+    }
+  }
+  lines.push('END:VCALENDAR');
+  return { text: lines.join('\r\n') + '\r\n', count: n };
+}
+
+// ----- LINE -----
+function cleanLineId(raw) {
+  let s = String(raw || '').replace(/\s+/g, '');
+  while (s.startsWith('~')) s = s.slice(1);
+  return s;
+}
+function lineWebUrl(id) {
+  const c = cleanLineId(id);
+  return c.startsWith('@') ? `https://line.me/R/ti/p/${encodeURIComponent(c)}` : `https://line.me/R/ti/p/~${encodeURIComponent(c)}`;
+}
+function lineAppUrl(id) {
+  const c = cleanLineId(id);
+  return c.startsWith('@') ? `line://ti/p/${encodeURIComponent(c)}` : `line://ti/p/~${encodeURIComponent(c)}`;
+}
+
+// ===== Converting the old street-based data (v1) into the grid =====
+const LEGACY_TEMPLATES = {
+  'Houses Both Sides': { cols: 3, house: [0, 2], road: [1] },
+  'Houses Left Side': { cols: 3, house: [0], road: [1, 2] },
+  'Houses Right Side': { cols: 3, house: [2], road: [0, 1] },
+  'Cul-de-sac': { cols: 2, house: [0, 1], road: [] },
+};
+function legacyDate(v) {
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'number') return ymdFromDate(new Date((v + 978307200) * 1000)); // Swift reference date
+  return parseDateLoose(String(v)) || '';
+}
+// store: { streets:[{id,name,template,rows}], blocks:[{id,houseName,colorName,icon,gridIndex,row,col,residents,decoration}] }
+function convertLegacyStore(store) {
+  const out = blankState();
+  const streets = Array.isArray(store.streets) ? store.streets : [];
+  const blocks = Array.isArray(store.blocks) ? store.blocks : [];
+  const COLS = 6;
+  let rowOffset = 0;
+  const placed = new Set();
+  const spill = [];
+  streets.forEach((st, gi) => {
+    const cfg = LEGACY_TEMPLATES[st.template] || LEGACY_TEMPLATES['Houses Both Sides'];
+    const rows = Math.max(1, st.rows | 0 || 5);
+    const colOff = Math.floor((COLS - cfg.cols) / 2);
+    const sec = { id: st.id || uid(), name: st.name || `Street ${gi + 1}`, colorName: SECTION_COLORS[gi % 6], cells: [], lastModified: nowISO() };
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cfg.cols; c++) {
+      const R = rowOffset + r, C = colOff + c;
+      sec.cells.push([R, C]);
+      if (cfg.road.includes(c) && !cfg.house.includes(c)) {
+        out.blocks.push({ id: uid(), kind: 'road', row: R, col: C, houseName: '', colorName: 'purple', icon: '', decoration: null, residents: [], lastModified: nowISO() });
+        placed.add(`${R},${C}`);
+      }
+    }
+    out.sections.push(sec);
+    for (const b of blocks) {
+      if ((b.gridIndex | 0) !== gi) continue;
+      if (b.row >= 0 && b.row < rows && cfg.house.includes(b.col | 0)) {
+        const R = rowOffset + (b.row | 0), C = colOff + (b.col | 0);
+        if (placed.has(`${R},${C}`)) { spill.push(b); continue; }
+        placed.add(`${R},${C}`);
+        out.blocks.push(legacyHouse(b, R, C));
+      } else spill.push(b);
+    }
+    rowOffset += rows + 1;
+  });
+  for (const b of blocks) if (!(b.gridIndex >= 0 && b.gridIndex < streets.length)) spill.push(b);
+  const total = Math.max(0, rowOffset - 1);          // rows used by the streets (without the trailing gap)
+  const spillStart = total ? total + 1 : 0;          // leave one empty row before the spill
+  let lastRow = total - 1;
+  spill.forEach((b, i) => {
+    const R = spillStart + Math.floor(i / COLS), C = i % COLS;
+    out.blocks.push(legacyHouse(b, R, C));
+    lastRow = R;
+  });
+  out.rows = Math.min(MAX_ROWS, Math.max(16, lastRow + 1 + 2));
+  out.columns = COLS;
+  return out;
+}
+function legacyHouse(b, R, C) {
+  return {
+    id: normId(b.id) || uid(), kind: 'house', row: R, col: C, houseName: b.houseName || '',
+    colorName: COLORS.includes(b.colorName) ? b.colorName : 'purple', icon: b.icon || '🏠',
+    decoration: b.decoration || null,
+    residents: (b.residents || []).map((p) => normPerson({
+      id: normId(p.id) || uid(), firstName: p.firstName, lastName: p.lastName,
+      gender: p.gender, role: p.role, birthday: legacyDate(p.birthday), lineId: p.lineId,
+      lastModified: p.lastModified,
+    })),
+    lastModified: b.lastModified || nowISO(),
+  };
+}
+
+// ===== CSV (for Excel, Numbers, Google Sheets) =====
+const CSV_HEADER = ['Kind', 'Section', 'HouseName', 'Row', 'Col', 'Color', 'Icon', 'Decoration',
+  'FirstName', 'LastName', 'Gender', 'Role', 'Birthday', 'LineID', 'Phone', 'Email', 'Notes',
+  'HouseID', 'PersonID', 'HouseLastModified', 'PersonLastModified'];
+
+function csvEscape(v) {
+  const s = v === null || v === undefined ? '' : String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function csvParse(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(cur); cur = ''; rows.push(row); row = [];
+    } else cur += ch;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+// Read a file as UTF-8, or Shift-JIS if it is not valid UTF-8 (Excel's plain "CSV" on a Japanese PC).
+function decodeBytes(buf) {
+  const bytes = new Uint8Array(buf);
+  try { return { text: new TextDecoder('utf-8', { fatal: true }).decode(bytes), encoding: 'UTF-8' }; } catch (e) { /* next */ }
+  for (const enc of ['shift_jis', 'windows-1252']) {
+    try { return { text: new TextDecoder(enc, { fatal: true }).decode(bytes), encoding: enc === 'shift_jis' ? 'Shift-JIS' : 'Windows-1252' }; } catch (e) { /* next */ }
+  }
+  return { text: new TextDecoder('utf-8').decode(bytes), encoding: 'UTF-8 (some characters may be wrong)' };
+}
+
+function buildCSV() {
+  const lines = [CSV_HEADER.join(',')];
+  const sorted = [...S.blocks].sort((a, b) => a.row - b.row || a.col - b.col);
+  for (const b of sorted) {
+    const sec = sectionOfBlock(b);
+    const base = [b.kind === 'house' ? 'House' : b.kind === 'road' ? 'Road' : 'Decoration', sec ? sec.name : '',
+      b.kind === 'house' ? b.houseName : '', b.row, b.col, b.kind === 'house' ? b.colorName : '',
+      b.icon || '', b.decoration || ''];
+    const ids = [b.id];
+    if (b.kind !== 'house' || !b.residents.length) {
+      lines.push([...base, '', '', '', '', '', '', '', '', '', b.id, '', b.lastModified, ''].map(csvEscape).join(','));
+    } else {
+      for (const p of b.residents) {
+        lines.push([...base, p.firstName, p.lastName, p.gender, p.role, p.birthday, p.lineId, p.phone, p.email, p.notes,
+          b.id, p.id, b.lastModified, p.lastModified].map(csvEscape).join(','));
+      }
+    }
+  }
+  return '﻿' + lines.join('\r\n') + '\r\n';
+}
+
+// ----- detecting what kind of file this is -----
+function detectCSVKind(rows) {
+  const head = rows.slice(0, 30);
+  for (const r of head) {
+    const first = (r[0] || '').trim().replace(/^﻿/, '');
+    if (first === 'Kind' || (r.map(lc).includes('kind') && r.map(lc).includes('housename'))) return 'grid';
+  }
+  for (const r of head) { const f = (r[0] || '').trim(); if (f === 'HouseID' || f === 'HouseName' || f === '#STREET') return 'legacy'; }
+  return 'unknown';
+}
+
+// Old street-based CSV (both the simple and the UUID flavors) -> same shape as the old JSON store.
+function parseLegacyCSV(rows) {
+  const streets = []; const blocksMap = new Map();
+  let mode = null; let hdr = null;
+  const nonEmpty = rows.filter((r) => r.some((c) => String(c).trim() !== ''));
+  for (const r of nonEmpty) {
+    const f = (r[0] || '').trim();
+    if (f === '#STREET') {
+      // simple: #STREET,Name,Template,Rows   |  v2: #STREET,StreetID,Name,Template,Rows,LastModified
+      if (lc(r[1]) === 'name' || lc(r[1]) === 'streetid') continue;
+      const isV2 = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test((r[1] || '').trim());
+      streets.push(isV2 ? { id: normId(r[1]), name: r[2], template: r[3], rows: parseInt(r[4], 10) || 5 }
+        : { id: uid(), name: r[1], template: r[2], rows: parseInt(r[3], 10) || 5 });
+      continue;
+    }
+    if (f === 'HouseID') { mode = 'v2'; hdr = r; continue; }
+    if (f === 'HouseName') { mode = 'simple'; hdr = r; continue; }
+    if (!mode) continue;
+    let b, p = null;
+    if (mode === 'v2') {
+      // HouseID,HouseName,StreetID,StreetName,GridIndex,Row,Col,ColorName,Icon,Decoration,PersonID,FirstName,LastName,Gender,Role,Birthday,LineID,HouseLast,PersonLast
+      const id = normId(r[0]); if (!id) continue;
+      b = blocksMap.get(id) || { id, houseName: r[1], gridIndex: parseInt(r[4], 10) || 0, row: parseInt(r[5], 10) || 0, col: parseInt(r[6], 10) || 0, colorName: r[7], icon: r[8], decoration: r[9] || null, residents: [] };
+      blocksMap.set(id, b);
+      if ((r[11] || '').trim() || (r[12] || '').trim()) p = { id: normId(r[10]) || uid(), firstName: r[11], lastName: r[12], gender: r[13], role: r[14], birthday: r[15], lineId: r[16] };
+    } else {
+      // HouseName,GridIndex,Row,Col,ColorName,Icon,FirstName,LastName,Gender,Role,Birthday,LineID
+      const gi = parseInt(r[1], 10) || 0, ro = parseInt(r[2], 10) || 0, co = parseInt(r[3], 10) || 0;
+      const key = `${gi}-${ro}-${co}`;
+      b = blocksMap.get(key) || { id: uid(), houseName: r[0], gridIndex: gi, row: ro, col: co, colorName: r[4], icon: r[5], decoration: null, residents: [] };
+      blocksMap.set(key, b);
+      if ((r[6] || '').trim() || (r[7] || '').trim()) p = { id: uid(), firstName: r[6], lastName: r[7], gender: r[8], role: r[9], birthday: r[10], lineId: r[11] };
+    }
+    if (p) { p.birthday = parseDateLoose(p.birthday) || ''; b.residents.push(p); }
+  }
+  const sts = streets.length ? streets : [
+    { id: uid(), name: 'Street 1', template: 'Houses Both Sides', rows: 5 },
+    { id: uid(), name: 'Street 2', template: 'Houses Right Side', rows: 5 },
+    { id: uid(), name: 'Street 3', template: 'Houses Both Sides', rows: 5 }];
+  return { streets: sts, blocks: [...blocksMap.values()] };
+}
+
+// ----- the new grid CSV: plan an import and describe every change before applying it -----
+function mapRole(v) {
+  const s = lc(v);
+  if (!s) return null;
+  if (['grandparent', 'grandparents', '祖父母', 'おじいちゃん', 'おばあちゃん', '祖父', '祖母'].includes(s)) return 'Grandparent';
+  if (['parent', 'parents', '親', '父', '母', '両親', '保護者'].includes(s)) return 'Parent';
+  if (['child', 'children', 'kid', '子', '子供', '子ども'].includes(s)) return 'Child';
+  if (['other', 'others', 'その他', '他'].includes(s)) return 'Other';
+  return undefined;
+}
+function mapGender(v) {
+  const s = lc(v);
+  if (!s) return null;
+  if (['male', 'm', 'man', '男', '男性'].includes(s)) return 'Male';
+  if (['female', 'f', 'woman', '女', '女性'].includes(s)) return 'Female';
+  if (['other', 'o', 'その他', '他'].includes(s)) return 'Other';
+  return undefined;
+}
+
+// mode 'merge': keep everything not in the file. mode 'replace': the file becomes the whole map.
+function planCSVImport(rows, mode) {
+  const plan = { state: null, changes: [], errors: [], warnings: [], counts: { newHouses: 0, updatedHouses: 0, newPeople: 0, updatedPeople: 0, cells: 0 } };
+  const addChange = (kind, text) => plan.changes.push({ kind, text });
+  const nonEmpty = [];
+  rows.forEach((r, i) => { if (r.some((c) => String(c).trim() !== '')) nonEmpty.push({ r, n: i + 1 }); });
+  if (!nonEmpty.length) { plan.errors.push({ row: 0, msg: t('The file is empty.') }); return plan; }
+  const headerRec = nonEmpty.find((x) => x.r.map(lc).includes('kind') || x.r.map(lc).includes('housename'));
+  if (!headerRec) { plan.errors.push({ row: 0, msg: t('No header row found. The first row must contain column names such as HouseName.') }); return plan; }
+  const hdr = headerRec.r.map((s) => lc(s).replace(/^﻿/, ''));
+  const col = (name) => hdr.indexOf(lc(name));
+  const has = (name) => col(name) >= 0;
+  const get = (rec, name) => { const i = col(name); return i >= 0 ? String(rec.r[i] === undefined ? '' : rec.r[i]).trim() : ''; };
+
+  // working copy
+  const base = mode === 'replace' ? { ...blankState(), columns: S.columns, rows: S.rows } : normalizeState(clone(S));
+  const oldSections = S.sections;
+  if (mode === 'replace') base.sections = [];
+  const byId = new Map(base.blocks.map((b) => [normId(b.id), b]));
+  const houseByName = new Map();
+  for (const b of base.blocks) if (b.kind === 'house') { const k = lc(b.houseName); houseByName.set(k, houseByName.has(k) ? null : b); }
+  const sectionByName = (name) => base.sections.find((s) => lc(s.name) === lc(name));
+  const getSection = (name) => {
+    let sec = sectionByName(name);
+    if (!sec) {
+      const old = oldSections.find((s) => lc(s.name) === lc(name));
+      const used = base.sections.map((s) => s.colorName);
+      const color = old ? old.colorName : (SECTION_COLORS.find((c) => !used.includes(c)) || SECTION_COLORS[base.sections.length % SECTION_COLORS.length]);
+      sec = { id: old ? old.id : uid(), name, colorName: color, cells: [], lastModified: nowISO() };
+      base.sections.push(sec);
+      addChange('new', t('New section: {0}', name));
+    }
+    return sec;
+  };
+
+  const bodyRecs = nonEmpty.filter((x) => x !== headerRec && nonEmpty.indexOf(x) > nonEmpty.indexOf(headerRec));
+  const groups = new Map();      // house key -> {recs, key}
+  const cellOps = [];            // roads and decorations
+  for (const rec of bodyRecs) {
+    const kindRaw = lc(get(rec, 'Kind'));
+    const kind = !kindRaw ? 'house' : (kindRaw.startsWith('road') || kindRaw === '道' || kindRaw === '道路') ? 'road'
+      : (kindRaw.startsWith('deco') || kindRaw === '装飾') ? 'decoration' : (kindRaw === 'house' || kindRaw === '家') ? 'house' : null;
+    if (!kind) { plan.errors.push({ row: rec.n, msg: t('Unknown Kind "{0}". Use House, Road or Decoration.', get(rec, 'Kind')) }); continue; }
+    if (kind === 'house') {
+      const id = normId(get(rec, 'HouseID'));
+      const name = get(rec, 'HouseName');
+      if (!id && !name) { plan.errors.push({ row: rec.n, msg: t('A house row needs a HouseName or a HouseID.') }); continue; }
+      const key = id ? 'id:' + id : 'name:' + lc(name);
+      if (!groups.has(key)) groups.set(key, { id, name, recs: [] });
+      groups.get(key).recs.push(rec);
+    } else {
+      const r = parseInt(get(rec, 'Row'), 10), c = parseInt(get(rec, 'Col'), 10);
+      if (!(r >= 0) || !(c >= 0) || r >= MAX_ROWS || c >= MAX_COLS) { plan.errors.push({ row: rec.n, msg: t('{0} rows need valid Row and Col numbers.', kind === 'road' ? t('Road') : t('Decoration')) }); continue; }
+      cellOps.push({ rec, kind, r, c });
+    }
+  }
+
+  // houses ----------------------------------------------------------
+  const toPlace = [];            // {block, r, c, wanted:boolean}
+  for (const g of groups.values()) {
+    const first = g.recs[0];
+    let block = (g.id && byId.get(g.id)) || null;
+    if (!block && !g.id) { const m = houseByName.get(lc(g.name)); block = m || null; }
+    const name = g.recs.map((x) => get(x, 'HouseName')).find(Boolean) || '';
+    const rr = parseInt(get(first, 'Row'), 10), cc = parseInt(get(first, 'Col'), 10);
+    const posOk = rr >= 0 && cc >= 0 && rr < MAX_ROWS && cc < MAX_COLS;
+    const rawPos = get(first, 'Row') !== '' || get(first, 'Col') !== '';
+    if (rawPos && !posOk) plan.errors.push({ row: first.n, msg: t('Row/Col "{0}/{1}" is not a valid position. The house keeps its place.', get(first, 'Row'), get(first, 'Col')) });
+    const color = lc(get(first, 'Color')); const icon = get(first, 'Icon'); const deco = get(first, 'Decoration');
+    const secName = get(first, 'Section');
+    let isNew = false;
+    if (!block) {
+      isNew = true;
+      const hsCount = base.blocks.filter((b) => b.kind === 'house').length;
+      block = {
+        id: g.id || uid(), kind: 'house', row: -1, col: -1, houseName: name || t('House {0}', hsCount + 1),
+        colorName: COLORS.includes(color) ? color : COLORS[hsCount % 8], icon: icon || HOUSE_ICONS[hsCount % 8],
+        decoration: deco || null, residents: [], lastModified: nowISO(),
+      };
+      base.blocks.push(block); byId.set(normId(block.id), block);
+      plan.counts.newHouses++;
+      addChange('new', t('New house: {0}', block.houseName));
+    } else {
+      const diffs = [];
+      if (name && name !== block.houseName) { diffs.push(t('name "{0}" → "{1}"', block.houseName, name)); block.houseName = name; }
+      if (color && COLORS.includes(color) && color !== block.colorName) { diffs.push(t('color {0} → {1}', block.colorName, color)); block.colorName = color; }
+      if (icon && icon !== block.icon) { diffs.push(t('icon {0} → {1}', block.icon, icon)); block.icon = icon; }
+      if (has('Decoration') && (deco || '') !== (block.decoration || '')) { diffs.push(t('decoration {0} → {1}', block.decoration || '–', deco || '–')); block.decoration = deco || null; }
+      if (diffs.length) { block.lastModified = nowISO(); plan.counts.updatedHouses++; addChange('update', `${block.houseName}: ${diffs.join(', ')}`); }
+    }
+    block.__sec = has('Section') ? secName : undefined;
+    block.__want = posOk ? [rr, cc] : null;
+    toPlace.push(block);
+
+    // people
+    for (const rec of g.recs) {
+      const fn = get(rec, 'FirstName'), ln = get(rec, 'LastName');
+      if (!fn && !ln) continue;
+      const bdRaw = get(rec, 'Birthday');
+      const bd = parseDateLoose(bdRaw);
+      if (bdRaw && bd === null) { plan.errors.push({ row: rec.n, msg: t('Birthday "{0}" is not a date I understand (use 2024-05-03). {1} was not imported.', bdRaw, `${fn} ${ln}`.trim()) }); continue; }
+      const genderRaw = get(rec, 'Gender'), roleRaw = get(rec, 'Role');
+      const gender = mapGender(genderRaw), role = mapRole(roleRaw);
+      if (gender === undefined) { plan.errors.push({ row: rec.n, msg: t('Gender "{0}" is not understood (Male, Female or Other). {1} was not imported.', genderRaw, `${fn} ${ln}`.trim()) }); continue; }
+      if (role === undefined) { plan.errors.push({ row: rec.n, msg: t('Role "{0}" is not understood (Grandparent, Parent, Child or Other). {1} was not imported.', roleRaw, `${fn} ${ln}`.trim()) }); continue; }
+      const pid = normId(get(rec, 'PersonID'));
+      let person = pid ? block.residents.find((p) => normId(p.id) === pid) : null;
+      if (!person) person = block.residents.find((p) => lc(p.firstName) === lc(fn) && lc(p.lastName) === lc(ln) && (!pid || true)) || null;
+      const vals = { firstName: fn, lastName: ln, birthday: bd };
+      if (gender) vals.gender = gender;
+      if (role) vals.role = role;
+      for (const [k, colName] of [['lineId', 'LineID'], ['phone', 'Phone'], ['email', 'Email'], ['notes', 'Notes']]) if (has(colName)) vals[k] = get(rec, colName);
+      if (!has('Birthday')) delete vals.birthday;
+      if (!person) {
+        person = normPerson({ id: pid || uid(), gender: gender || 'Other', role: role || 'Other', birthday: '', ...vals });
+        block.residents.push(person);
+        plan.counts.newPeople++;
+        addChange('new', t('New person: {0} ({1})', `${fn} ${ln}`.trim(), block.houseName));
+      } else {
+        const diffs = [];
+        const labels = { firstName: t('first name'), lastName: t('last name'), gender: t('gender'), role: t('role'), birthday: t('birthday'), lineId: t('LINE ID'), phone: t('phone'), email: t('email'), notes: t('notes') };
+        for (const [k, v] of Object.entries(vals)) {
+          if ((person[k] || '') !== (v || '')) { diffs.push(`${labels[k]} ${person[k] || '–'} → ${v || '–'}`); person[k] = v || ''; }
+        }
+        if (diffs.length) { person.lastModified = nowISO(); plan.counts.updatedPeople++; addChange('update', `${`${person.firstName} ${person.lastName}`.trim()}: ${diffs.join(', ')}`); }
+      }
+    }
+  }
+
+  // roads and decorations -------------------------------------------
+  const cellsToSet = [];
+  for (const op of cellOps) {
+    const sec = has('Section') ? get(op.rec, 'Section') : undefined;
+    if (op.kind === 'road') cellsToSet.push({ kind: 'road', r: op.r, c: op.c, sec, n: op.rec.n });
+    else {
+      const em = firstEmoji(get(op.rec, 'Icon')) || firstEmoji(get(op.rec, 'Decoration'));
+      if (!em) { plan.errors.push({ row: op.rec.n, msg: t('Decoration rows need an emoji in the Icon column.') }); continue; }
+      cellsToSet.push({ kind: 'decoration', r: op.r, c: op.c, emoji: em, sec, n: op.rec.n });
+    }
+  }
+
+  // placement: move/place houses, then set road and decoration cells --------------
+  const moving = toPlace.filter((b) => b.__want);
+  const unplaced = toPlace.filter((b) => !b.__want && b.row < 0);
+  const fixed = base.blocks.filter((b) => !toPlace.includes(b));
+  const taken = new Map(fixed.map((b) => [`${b.row},${b.col}`, b]));
+  for (const b of toPlace) if (!b.__want && b.row >= 0) taken.set(`${b.row},${b.col}`, b);
+  const growTo = (r, c) => { if (r >= base.rows) base.rows = Math.min(MAX_ROWS, r + 1); if (c >= base.columns) base.columns = Math.min(MAX_COLS, c + 1); };
+  const emptySpot = () => {
+    for (let r = 0; r < MAX_ROWS; r++) for (let c = 0; c < Math.max(6, base.columns); c++) {
+      if (!taken.has(`${r},${c}`) && !cellsToSet.some((x) => x.r === r && x.c === c)) { growTo(r, c); return [r, c]; }
+    }
+    return [base.rows, 0];
+  };
+  // cells claimed by roads/decorations in the file win over existing roads/decorations, but not over houses
+  const claimed = new Set();
+  for (const op of cellsToSet) {
+    const k = `${op.r},${op.c}`;
+    const cur = taken.get(k);
+    if (cur && cur.kind === 'house') { plan.errors.push({ row: op.n, msg: t('Cell row {0}, col {1} is already a house ({2}), so the {3} was skipped.', op.r, op.c, cur.houseName, op.kind === 'road' ? t('road') : t('decoration')) }); op.skip = true; continue; }
+    if (cur && cur.kind === op.kind && (op.kind === 'road' || cur.icon === op.emoji)) { op.skip = true; op.same = true; claimed.add(k); continue; }
+    if (cur) { base.blocks = base.blocks.filter((b) => b !== cur); taken.delete(k); }
+    claimed.add(k);
+  }
+  for (const b of moving) {
+    const [r, c] = b.__want; const k = `${r},${c}`;
+    const wasAt = b.row >= 0 ? `${b.row},${b.col}` : null;
+    let occ = taken.get(k);
+    if (occ && occ !== b && !claimed.has(k) && occ.kind !== 'house') { base.blocks = base.blocks.filter((x) => x !== occ); taken.delete(k); occ = null; }
+    if ((occ && occ !== b) || claimed.has(k)) {
+      const [er, ec] = emptySpot();
+      plan.warnings.push(t('{0} wanted row {1}, col {2}, but that cell is taken. It was put at row {3}, col {4}.', b.houseName, r, c, er, ec));
+      if (wasAt) taken.delete(wasAt);
+      b.row = er; b.col = ec; taken.set(`${er},${ec}`, b);
+    } else {
+      if (wasAt && wasAt !== k) { taken.delete(wasAt); addChange('update', t('{0} moved to row {1}, col {2}', b.houseName, r, c)); }
+      growTo(r, c); b.row = r; b.col = c; taken.set(k, b);
+    }
+  }
+  for (const b of unplaced) { const [er, ec] = emptySpot(); b.row = er; b.col = ec; taken.set(`${er},${ec}`, b); }
+  for (const op of cellsToSet) {
+    if (op.skip) continue;
+    growTo(op.r, op.c);
+    const blk = { id: uid(), kind: op.kind, row: op.r, col: op.c, houseName: '', colorName: 'purple', icon: op.kind === 'decoration' ? op.emoji : '', decoration: null, residents: [], lastModified: nowISO() };
+    base.blocks.push(blk); taken.set(`${op.r},${op.c}`, blk); plan.counts.cells++;
+  }
+  if (plan.counts.cells) addChange('new', t('{0} road/decoration cells set', plan.counts.cells));
+
+  // sections --------------------------------------------------------
+  const setSec = (r, c, name) => {
+    for (const s of base.sections) { const i = s.cells.findIndex((p) => p[0] === r && p[1] === c); if (i >= 0 && lc(s.name) !== lc(name)) s.cells.splice(i, 1); }
+    if (name) { const s = getSection(name); if (!s.cells.some((p) => p[0] === r && p[1] === c)) s.cells.push([r, c]); }
+  };
+  for (const b of toPlace) if (b.__sec !== undefined) setSec(b.row, b.col, b.__sec);
+  for (const op of cellsToSet) if ((!op.skip || op.same) && op.sec !== undefined) setSec(op.r, op.c, op.sec);
+  for (const b of base.blocks) { delete b.__sec; delete b.__want; }
+  base.sections = base.sections.filter((s) => s.cells.length || mode === 'merge');
+
+  plan.state = normalizeState(base);
+  return plan;
+}
+
+// ===== Shared UI pieces: modals, sheets, dialogs, toast =====
+const modalStack = [];
+let modalLock = 0;
+
+function updateBodyLock() { document.body.classList.toggle('modal-open', modalStack.length > 0); }
+
+// openModal({title, render(body, m), right(m) -> node, live, back, onClose})
+function openModal(opts) {
+  hideToast();
+  const overlay = h('div', { class: 'overlay', onmousedown: (e) => { if (e.target === overlay) m.close(); } });
+  const titleEl = h('div', { class: 'mtitle' });
+  const rightEl = h('div', { class: 'mright' });
+  const closeBtn = h('button', { class: 'mbtn', type: 'button', onclick: () => m.close() }, opts.back ? '‹ ' + opts.back : t('Close'));
+  const body = h('div', { class: 'mbody' });
+  const sheet = h('div', { class: 'msheet', role: 'dialog', 'aria-modal': 'true' }, h('div', { class: 'mhead' }, closeBtn, titleEl, rightEl), body);
+  overlay.appendChild(sheet);
+  const m = {
+    el: overlay, body, opts, live: opts.live !== false,
+    update() {
+      const sc = body.scrollTop;
+      titleEl.textContent = typeof opts.title === 'function' ? opts.title() : opts.title || '';
+      rightEl.replaceChildren();
+      if (opts.right) { const r = opts.right(m); if (r) rightEl.appendChild(r); }
+      body.replaceChildren();
+      opts.render(body, m);
+      body.scrollTop = sc;
+    },
+    close() {
+      const i = modalStack.indexOf(m);
+      if (i < 0) return;
+      modalStack.splice(i, 1);
+      overlay.classList.add('closing');
+      setTimeout(() => overlay.remove(), 120);
+      updateBodyLock();
+      if (opts.onClose) opts.onClose();
+    },
+  };
+  modalStack.push(m);
+  $('#modalRoot').appendChild(overlay);
+  updateBodyLock();
+  m.update();
+  return m;
+}
+function refreshModals() { for (const m of [...modalStack]) if (m.live && m.el.isConnected) m.update(); }
+function closeTopModal() { const m = modalStack[modalStack.length - 1]; if (m) { m.close(); return true; } return false; }
+
+// action sheet: items = [{label, onClick, danger, hidden}]
+function openSheet(title, subtitle, items) {
+  const close = () => { overlay.classList.add('closing'); setTimeout(() => overlay.remove(), 120); sheetOpen = null; };
+  const overlay = h('div', { class: 'overlay sheetwrap', onmousedown: (e) => { if (e.target === overlay) close(); } },
+    h('div', { class: 'asheet' },
+      h('div', { class: 'agroup' },
+        h('div', { class: 'ahead' }, h('div', { class: 'at' }, title), subtitle ? h('div', { class: 'as' }, subtitle) : null),
+        items.filter((i) => !i.hidden).map((i) => h('button', { class: 'aitem' + (i.danger ? ' danger' : ''), type: 'button', onclick: () => { close(); setTimeout(i.onClick, 0); } }, i.label))),
+      h('div', { class: 'agroup' }, h('button', { class: 'aitem bold', type: 'button', onclick: close }, t('Cancel')))));
+  $('#modalRoot').appendChild(overlay);
+  sheetOpen = { close };
+  return { close };
+}
+let sheetOpen = null;
+
+function confirmDialog({ title, message, ok, danger }) {
+  return new Promise((resolve) => {
+    const done = (v) => { overlay.remove(); resolve(v); };
+    const overlay = h('div', { class: 'overlay dialogwrap' },
+      h('div', { class: 'dialog', role: 'alertdialog' },
+        h('div', { class: 'dt' }, title),
+        message ? h('div', { class: 'dm' }, message) : null,
+        h('div', { class: 'dbtns' },
+          h('button', { class: 'dbtn', type: 'button', onclick: () => done(false) }, t('Cancel')),
+          h('button', { class: 'dbtn bold' + (danger ? ' danger' : ''), type: 'button', onclick: () => done(true) }, ok || t('OK')))));
+    $('#modalRoot').appendChild(overlay);
+  });
+}
+
+// toast with an optional action button (for Undo)
+let toastTimer = null;
+function toast(msg, opts = {}) {
+  const el = $('#toast');
+  el.replaceChildren(h('span', null, msg));
+  if (opts.action) el.appendChild(h('button', { type: 'button', class: 'tact', onclick: () => { hideToast(); opts.action.fn(); } }, opts.action.label));
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, opts.ms || 3200);
+}
+function hideToast() { $('#toast').classList.remove('show'); }
+
+// reusable bits ------------------------------------------------------------
+function swatchRow(selected, onPick, names = COLORS) {
+  return h('div', { class: 'swatches' }, names.map((n) => h('button', {
+    type: 'button', class: `swatch hc-${n}` + (n === selected ? ' sel' : ''), 'aria-label': n,
+    onclick: (e) => { onPick(n); [...e.currentTarget.parentNode.children].forEach((x) => x.classList.toggle('sel', x === e.currentTarget)); },
+  })));
+}
+function field(label, input, hint) {
+  return h('label', { class: 'field' }, h('span', { class: 'flabel' }, label), input, hint ? h('span', { class: 'fhint' }, hint) : null);
+}
+function segmented(options, value, onPick) {
+  const wrap = h('div', { class: 'seg' });
+  options.forEach(([val, label]) => wrap.appendChild(h('button', {
+    type: 'button', class: val === value ? 'on' : '',
+    onclick: () => { onPick(val); [...wrap.children].forEach((b, i) => b.classList.toggle('on', options[i][0] === val)); },
+  }, label)));
+  return wrap;
+}
+function avatar(person, size = 44) {
+  const url = photoOf(person.id);
+  const g = person.gender;
+  const el = h('div', { class: `avatar g-${g}`, style: { width: size + 'px', height: size + 'px', fontSize: Math.round(size * 0.52) + 'px' } },
+    url ? h('img', { src: url, alt: '' }) : GENDER_ICON[g] || '🧑');
+  return el;
+}
+
+// ===== The map screen =====
+const ui = {
+  edit: false, tool: null, moving: null, moveSrc: null,
+  dismissedBirthday: false, dismissedSaveError: false,
+};
+
+function renderAll() {
+  renderTop();
+  renderBanners();
+  renderMap();
+  renderPalette();
+  refreshModals();
+}
+
+function renderTop() {
+  const n = houses().length;
+  $('#count').textContent = n === 1 ? t('{0} home', n) : t('{0} homes', n);
+  const eb = $('#btnEdit');
+  eb.textContent = ui.edit ? t('Done') : '✏️ ' + t('Edit Map');
+  eb.classList.toggle('on', ui.edit);
+  $('#editNote').hidden = !ui.edit;
+  $('#editNote').textContent = t('Edit Map · tap cells to change them');
+  $('#count').hidden = ui.edit;
+  $('#btnZoomOut').disabled = settings.zoom <= 0;
+  $('#btnZoomIn').disabled = settings.zoom >= ZOOMS.length - 1;
+  document.documentElement.lang = LANG;
+}
+
+function renderBanners() {
+  const box = $('#banners');
+  box.replaceChildren();
+  if (!saveStatus.ok && !ui.dismissedSaveError) {
+    box.appendChild(h('div', { class: 'banner err' },
+      h('span', null, '⚠️ ' + t('Your latest change could not be saved: {0}', saveStatus.error || '')),
+      h('button', { type: 'button', onclick: async () => { await doSave(); renderBanners(); } }, t('Try again')),
+      h('button', { type: 'button', onclick: () => { ui.dismissedSaveError = true; renderBanners(); } }, '✕')));
+  }
+  if (ui.moving) {
+    const b = blockById(ui.moving);
+    box.appendChild(h('div', { class: 'banner move' },
+      h('span', null, t('Tap an empty cell to move {0}', b ? b.houseName : '')),
+      h('button', { type: 'button', onclick: () => { ui.moving = null; renderAll(); } }, t('Cancel'))));
+  }
+  if (!ui.dismissedBirthday && !ui.edit) {
+    const soon = upcomingBirthdays(3).slice(0, 4);
+    if (soon.length) {
+      box.appendChild(h('div', { class: 'banner bday' },
+        h('div', { class: 'bl' }, soon.map((x) => h('div', null,
+          '🎂 ', x.days === 0 ? t('Today') : x.days === 1 ? t('Tomorrow') : t('In {0} days', x.days), ': ',
+          h('b', null, fullName(x.person) || '?'), ` — ${placeLabel(x.block)} · ${t('turns {0}', x.turns)}`))),
+        h('button', { type: 'button', onclick: () => { ui.dismissedBirthday = true; renderBanners(); } }, '✕')));
+    }
+  }
+}
+
+function baseCellPx() {
+  const sc = $('#mapScroll');
+  const avail = Math.max(240, (sc.clientWidth || window.innerWidth) - 32);
+  return Math.min(104, Math.floor((avail - GAP * 5) / 6));
+}
+function cellPx() { return Math.max(22, Math.round(baseCellPx() * ZOOMS[settings.zoom])); }
+
+function roadSVG(r, c) {
+  const isRoad = (rr, cc) => { const b = blockAt(rr, cc); return b && b.kind === 'road'; };
+  const U = isRoad(r - 1, c), D = isRoad(r + 1, c), L = isRoad(r, c - 1), R = isRoad(r, c + 1);
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('class', 'roadsvg');
+  svg.setAttribute('aria-hidden', 'true');
+  const add = (tag, attrs, cls) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (cls) e.setAttribute('class', cls); svg.appendChild(e); };
+  add('rect', { x: 0, y: 0, width: 100, height: 100, rx: 10 }, 'rd');
+  const ext = 14;
+  if (U) add('rect', { x: 0, y: -ext, width: 100, height: 50 + ext }, 'rd');
+  if (D) add('rect', { x: 0, y: 50, width: 100, height: 50 + ext }, 'rd');
+  if (L) add('rect', { x: -ext, y: 0, width: 50 + ext, height: 100 }, 'rd');
+  if (R) add('rect', { x: 50, y: 0, width: 50 + ext, height: 100 }, 'rd');
+  if (U && D && R && !L || false) { /* junction shapes are covered by the arms above */ }
+  const cap = (x, y, w, hh) => add('rect', { x: x - w / 2, y: y - hh / 2, width: w, height: hh, rx: Math.min(w, hh) / 2 }, 'rdash');
+  const horizOnly = (L || R) && !U && !D, vertOnly = (U || D) && !L && !R;
+  if (horizOnly) { for (const x of [16, 50, 84]) cap(x, 50, 18, 7); }
+  else if (vertOnly) { for (const y of [16, 50, 84]) cap(50, y, 7, 18); }
+  else if (!U && !D && !L && !R) { add('circle', { cx: 50, cy: 50, r: 4.5 }, 'rdash'); }
+  else {
+    add('circle', { cx: 50, cy: 50, r: 4.5 }, 'rdash');
+    if (U) cap(50, 24, 7, 18); if (D) cap(50, 76, 7, 18); if (L) cap(24, 50, 18, 7); if (R) cap(76, 50, 18, 7);
+  }
+  return svg;
+}
+
+function cellEl(r, c) {
+  const b = blockAt(r, c);
+  const sec = sectionAt(r, c);
+  const cls = ['cell'];
+  const attrs = { type: 'button', 'data-r': r, 'data-c': c };
+  const kids = [];
+  if (sec) cls.push('sec', 'sc-' + sec.colorName);
+  if (!b) { cls.push('grass'); attrs['aria-label'] = t('Empty cell, row {0}, column {1}', r + 1, c + 1); }
+  else if (b.kind === 'road') { cls.push('road'); attrs['aria-label'] = t('Road, row {0}, column {1}', r + 1, c + 1); kids.push(roadSVG(r, c)); }
+  else if (b.kind === 'decoration') { cls.push('deco'); attrs['aria-label'] = t('Decoration {0}', b.icon); kids.push(h('span', { class: 'bigico' }, b.icon)); }
+  else {
+    cls.push('house', 'hc-' + b.colorName);
+    const photo = photoOf(b.id);
+    attrs['aria-label'] = `${b.houseName}, ${b.residents.length === 1 ? t('{0} resident', 1) : t('{0} residents', b.residents.length)}`;
+    kids.push(photo ? h('img', { class: 'hph', src: photo, alt: '' }) : h('span', { class: 'ico' }, b.decoration || b.icon));
+    kids.push(h('span', { class: 'nm' }, b.houseName));
+    if (b.residents.length) kids.push(h('span', { class: 'cnt' }, `${b.residents.length} 👤`));
+    if (houseHasBirthdaySoon(b)) kids.push(h('span', { class: 'cake', title: t('Birthday this week') }, '🎂'));
+  }
+  if (ui.moving && !b) cls.push('drop');
+  if (ui.edit && ui.tool && ui.tool.type === 'move' && ui.moveSrc && !b) cls.push('drop');
+  if ((ui.moving && b && b.id === ui.moving) || (ui.moveSrc && b && b.id === ui.moveSrc)) cls.push('lift');
+  // section name chip on the top-left cell of each section
+  if (sec) {
+    const a = sectionAnchor(sec);
+    if (a && a[0] === r && a[1] === c && sec.name) kids.push(h('span', { class: 'chip', 'data-sid': sec.id, style: { background: `var(--sc-${sec.colorName})` } }, sec.name));
+  }
+  return h('button', { ...attrs, class: cls.join(' ') }, kids);
+}
+
+function renderMap() {
+  const map = $('#map');
+  map.className = `map ${settings.grass}${ui.edit ? ' editing' : ''}`;
+  map.style.setProperty('--cell', cellPx() + 'px');
+  map.style.gridTemplateColumns = `repeat(${S.columns}, var(--cell))`;
+  const frag = document.createDocumentFragment();
+  for (let r = 0; r < S.rows; r++) for (let c = 0; c < S.columns; c++) frag.appendChild(cellEl(r, c));
+  map.replaceChildren(frag);
+  // row / column buttons while editing
+  const gt = $('#gridTools');
+  gt.replaceChildren();
+  gt.hidden = !ui.edit;
+  if (ui.edit) {
+    gt.append(
+      h('button', { type: 'button', onclick: () => addRow(), disabled: S.rows >= MAX_ROWS }, '＋ ' + t('Row')),
+      h('button', { type: 'button', onclick: () => removeRow(), disabled: !canRemoveRow() }, '－ ' + t('Row')),
+      h('button', { type: 'button', onclick: () => addColumn(), disabled: S.columns >= MAX_COLS }, '＋ ' + t('Column')),
+      h('button', { type: 'button', onclick: () => removeColumn(), disabled: !canRemoveColumn() }, '－ ' + t('Column')));
+  }
+  $('#mapScroll').classList.toggle('padpal', ui.edit);
+}
+
+// ----- tapping and painting -----
+let suppressClick = false;
+function doUndo() { if (undo()) { renderAll(); toast(t('Undone')); } }
+
+function normalTap(r, c) {
+  const b = blockAt(r, c);
+  if (ui.moving) {
+    if (!b) { const id = ui.moving; ui.moving = null; moveBlock(id, r, c); toast(t('Moved'), { action: { label: t('Undo'), fn: doUndo } }); }
+    else if (b.id === ui.moving) { ui.moving = null; renderAll(); }
+    return;
+  }
+  if (!b) {
+    createHouseAt(r, c);
+    toast(t('House added'), { action: { label: t('Undo'), fn: doUndo }, ms: 3000 });
+    return;
+  }
+  if (b.kind === 'house') openHouseSheet(b.id);
+}
+
+function editTap(r, c) {
+  const tool = ui.tool;
+  if (!tool) { toast(t('Pick a cell type below first.')); return; }
+  const cur = blockAt(r, c);
+  if (tool.type === 'move') {
+    if (!ui.moveSrc) { if (cur) { ui.moveSrc = cur.id; renderAll(); } else toast(t('Tap the cell you want to move first.')); return; }
+    if (!cur) { const id = ui.moveSrc; ui.moveSrc = null; moveBlock(id, r, c); }
+    else if (cur.id === ui.moveSrc) { ui.moveSrc = null; renderAll(); }
+    else toast(t('Pick an empty cell.'));
+    return;
+  }
+  const losing = cur && cur.kind === 'house' && cur.residents.length && tool.type !== 'house' && tool.type !== 'section' ? cur : null;
+  const changed = paintCell(r, c, tool);
+  if (changed && losing) toast(t('{0} was removed together with its {1} people.', losing.houseName, losing.residents.length), { action: { label: t('Undo'), fn: doUndo }, ms: 5000 });
+}
+
+function onMapClick(e) {
+  const chip = e.target.closest('.chip');
+  if (chip && ui.edit) { openSectionEditor(chip.dataset.sid); return; }
+  const cell = e.target.closest('.cell');
+  if (!cell) return;
+  if (suppressClick) { suppressClick = false; return; }
+  const r = +cell.dataset.r, c = +cell.dataset.c;
+  if (ui.edit) editTap(r, c); else normalTap(r, c);
+}
+
+// With a mouse you can also drag across cells to paint a whole stroke (one Undo for the stroke).
+let stroking = false, lastStrokeCell = null;
+function strokePaint(el) {
+  const cell = el && el.closest && el.closest('.cell');
+  if (!cell) return;
+  const r = +cell.dataset.r, c = +cell.dataset.c, key = r + ',' + c;
+  if (key === lastStrokeCell) return;
+  lastStrokeCell = key;
+  paintCell(r, c, ui.tool);
+}
+function setupStrokes() {
+  const map = $('#map');
+  map.addEventListener('pointerdown', (e) => {
+    if (!ui.edit || !ui.tool || ui.tool.type === 'move' || e.pointerType !== 'mouse' || e.button !== 0) return;
+    if (e.target.closest('.chip')) return;
+    stroking = true; lastStrokeCell = null; suppressClick = true;
+    beginStroke();
+    const cell = e.target.closest('.cell');
+    if (cell) {
+      const cur = blockAt(+cell.dataset.r, +cell.dataset.c);
+      if (cur && cur.kind === 'house' && cur.residents.length && ui.tool.type !== 'house' && ui.tool.type !== 'section') {
+        // a single click on a house with people: let the normal click handler warn with an Undo toast
+        stroking = false; suppressClick = false; endStroke(); return;
+      }
+    }
+    strokePaint(e.target);
+  });
+  map.addEventListener('pointermove', (e) => {
+    if (!stroking || !(e.buttons & 1)) return;
+    strokePaint(document.elementFromPoint(e.clientX, e.clientY));
+  });
+  const end = () => { if (stroking) { stroking = false; endStroke(); setTimeout(() => { suppressClick = false; }, 60); } };
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+}
+
+// ----- the Edit Map palette -----
+function setTool(tool) { ui.tool = tool; ui.moveSrc = null; renderAll(); }
+function toolIs(type, extra) { return ui.tool && ui.tool.type === type && (extra === undefined || ui.tool.emoji === extra); }
+
+function renderPalette() {
+  const p = $('#palette');
+  p.replaceChildren();
+  p.hidden = !ui.edit;
+  if (!ui.edit) return;
+  const chip = (key, label, selected, onclick, content) => h('button', { type: 'button', class: 'pchip' + (selected ? ' sel' : ''), 'aria-pressed': selected ? 'true' : 'false', onclick },
+    h('span', { class: 'pc ' + key }, content), h('span', { class: 'pl' }, label));
+  const chips = [
+    chip('grass', t('Grass'), toolIs('grass'), () => setTool({ type: 'grass' }), ''),
+    chip('road', t('Road'), toolIs('road'), () => setTool({ type: 'road' }), h('i')),
+    chip('house', t('House'), toolIs('house'), () => setTool({ type: 'house' }), '🏠'),
+    ...settings.favorites.map((e) => chip('em', '', toolIs('emoji', e), () => setTool({ type: 'emoji', emoji: e }), e)),
+    chip('em', t('More'), false, () => openEmojiPicker((em) => { rememberEmoji(em); setTool({ type: 'emoji', emoji: em }); }), '…'),
+    chip('sec', t('Section'), toolIs('section'), () => setTool({ type: 'section', sectionId: ui.tool && ui.tool.sectionId || (S.sections[0] && S.sections[0].id) || null }), 'A'),
+    chip('mv', t('Move'), toolIs('move'), () => setTool({ type: 'move' }), '✥'),
+  ];
+  // favorites carry their own short caption
+  const labels = [t('Grass'), t('Road'), t('House')];
+  const row = h('div', { class: 'chips' }, chips);
+  const head = h('div', { class: 'phead' },
+    h('b', null, t('Cell type')),
+    h('button', { type: 'button', class: 'undo', disabled: !canUndo(), onclick: doUndo }, '↶ ' + t('Undo')));
+  p.append(h('div', { class: 'grip' }), head, row);
+  if (settings.recent.length) {
+    p.append(h('div', { class: 'recent' }, h('span', { class: 'rl' }, t('Recent')),
+      settings.recent.map((e) => h('button', { type: 'button', class: 'rchip' + (toolIs('emoji', e) ? ' sel' : ''), onclick: () => setTool({ type: 'emoji', emoji: e }) }, e))));
+  }
+  if (toolIs('section')) {
+    const cur = ui.tool.sectionId;
+    p.append(h('div', { class: 'secrow' },
+      h('button', { type: 'button', class: 'spill' + (!cur ? ' sel' : ''), onclick: () => setTool({ type: 'section', sectionId: null }) }, t('No section')),
+      S.sections.map((s) => h('button', { type: 'button', class: 'spill' + (cur === s.id ? ' sel' : ''), style: { '--pc': `var(--sc-${s.colorName})` }, onclick: () => setTool({ type: 'section', sectionId: s.id }) }, s.name || t('Section')),),
+      h('button', { type: 'button', class: 'spill add', onclick: () => openSectionEditor(null) }, '＋ ' + t('New section')),
+      cur ? h('button', { type: 'button', class: 'spill', onclick: () => openSectionEditor(cur) }, '✏️') : null));
+  }
+  p.append(h('div', { class: 'phint' }, !ui.tool ? t('Pick a type, then tap cells.') :
+    ui.tool.type === 'move' ? (ui.moveSrc ? t('Now tap an empty cell.') : t('Tap a cell, then an empty cell.')) :
+    ui.tool.type === 'section' ? t('Tap cells to put them in the chosen section.') :
+    t('Tap cells to paint. Painting over a house removes it and its people (Undo brings it back).')));
+}
+function rememberEmoji(em) {
+  settings.recent = [em, ...settings.recent.filter((x) => x !== em)].slice(0, 10);
+  saveSettings();
+}
+
+function setZoom(i) {
+  settings.zoom = Math.max(0, Math.min(ZOOMS.length - 1, i));
+  saveSettings();
+  renderMap(); renderTop();
+}
+
+// ===== Screens: house menu, residents, forms, settings, birthdays, import =====
+const fmtMD = (ymd) => {
+  const { m, d } = splitYMD(ymd);
+  return new Date(2000, m - 1, d).toLocaleDateString(LANG === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric' });
+};
+const fmtDate = (ymd) => {
+  const { y, m, d } = splitYMD(ymd);
+  return new Date(y, m - 1, d).toLocaleDateString(LANG === 'ja' ? 'ja-JP' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+const fmtStamp = (iso) => new Date(iso).toLocaleString(LANG === 'ja' ? 'ja-JP' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' });
+const ROLE_PLURAL = { Grandparent: 'Grandparents', Parent: 'Parents', Child: 'Children', Other: 'Others' };
+const residentsText = (n) => (n === 1 ? t('{0} resident', 1) : t('{0} residents', n));
+
+// ----- the menu shown when you tap a house -----
+function openHouseSheet(id) {
+  const b = blockById(id);
+  if (!b) return;
+  const sec = sectionOfBlock(b);
+  const n = b.residents.length;
+  const lineCount = b.residents.filter((p) => p.lineId).length;
+  openSheet(b.houseName, [sec && sec.name, n ? residentsText(n) : t('No residents yet')].filter(Boolean).join(' · '), [
+    { label: '👥 ' + t('Residents'), onClick: () => openResidents(id) },
+    { label: '💬 ' + t('Message on LINE'), onClick: () => openLineList(id), hidden: !lineCount },
+    { label: t('Move'), onClick: () => { ui.moving = id; renderAll(); } },
+    { label: '✏️ ' + t('Edit House'), onClick: () => openHouseEdit(id) },
+    { label: t('Delete'), danger: true, onClick: () => { const name = b.houseName; deleteBlock(id); toast(t('{0} deleted.', name), { action: { label: t('Undo'), fn: doUndo }, ms: 6000 }); } },
+  ]);
+}
+
+// ----- residents -----
+function openResidents(id) {
+  openModal({
+    title: () => { const b = blockById(id); return b ? b.houseName : ''; },
+    right: () => h('button', { class: 'mbtn strong', type: 'button', onclick: () => openPersonForm(id, null) }, '＋ ' + t('Add')),
+    render(body, m) {
+      const b = blockById(id);
+      if (!b) { m.close(); return; }
+      const photo = photoOf(b.id);
+      if (photo) body.appendChild(h('img', { class: 'housephoto', src: photo, alt: '' }));
+      if (!b.residents.length) {
+        body.appendChild(h('div', { class: 'empty' }, h('div', { class: 'big' }, '👪'), h('div', null, t('No residents yet')), h('button', { class: 'primary', type: 'button', onclick: () => openPersonForm(id, null) }, '＋ ' + t('Add a resident'))));
+        return;
+      }
+      for (const role of ROLES) {
+        const list = b.residents.filter((p) => p.role === role);
+        if (!list.length) continue;
+        body.appendChild(h('div', { class: 'grouphead' }, `${ROLE_ICON[role]} ${t(ROLE_PLURAL[role])}`));
+        list.forEach((p) => body.appendChild(personRow(id, p)));
+      }
+    },
+  });
+}
+function personRow(houseId, p) {
+  const age = ageOn(p);
+  const nb = nextBirthday(p);
+  const sub = [t(p.role), age !== null ? t('{0} yrs', age) : null, p.birthday ? '🎂 ' + fmtMD(p.birthday) : null].filter(Boolean).join(' · ');
+  const stop = (fn) => (e) => { e.stopPropagation(); fn(e); };
+  return h('div', { class: 'prow', role: 'button', tabindex: 0, onclick: () => openPersonForm(houseId, p.id), onkeydown: (e) => { if (e.key === 'Enter') openPersonForm(houseId, p.id); } },
+    avatar(p, 46),
+    h('div', { class: 'pmain' },
+      h('div', { class: 'pname' }, fullName(p) || '?'),
+      h('div', { class: 'psub' }, sub),
+      nb && nb.days <= 14 ? h('div', { class: 'pbday' }, nb.days === 0 ? t('🎂 Birthday today!') : t('🎂 Birthday in {0} days', nb.days)) : null),
+    h('div', { class: 'pbtns' },
+      p.lineId ? h('button', { type: 'button', class: 'linebtn', 'aria-label': t('Message on LINE'), onclick: stop(() => openLine(p.lineId)) }, 'LINE') : null,
+      p.phone ? h('a', { class: 'iconbtn', href: 'tel:' + p.phone.replace(/[^\d+]/g, ''), 'aria-label': t('Call'), onclick: (e) => e.stopPropagation() }, '📞') : null,
+      p.email ? h('a', { class: 'iconbtn', href: 'mailto:' + p.email, 'aria-label': t('Email'), onclick: (e) => e.stopPropagation() }, '✉️') : null));
+}
+
+function openPersonForm(houseId, personId) {
+  const b = blockById(houseId);
+  if (!b) return;
+  const existing = personId ? b.residents.find((p) => p.id === personId) : null;
+  const d = existing ? clone(existing) : blankPerson();
+  openModal({
+    title: existing ? (fullName(d) || t('Resident')) : t('New resident'),
+    live: false, back: t('Back'),
+    render(body, m) {
+      const avatarSlot = h('div', { class: 'avslot' }, avatar(d, 72));
+      const refreshAvatar = () => avatarSlot.replaceChildren(avatar(d, 72));
+      const inp = (key, props = {}) => h('input', { class: 'input', value: d[key] || '', oninput: (e) => { d[key] = e.target.value; }, ...props });
+      body.append(
+        h('div', { class: 'photorow' }, avatarSlot, h('div', { class: 'pbtnrow' },
+          h('button', { type: 'button', class: 'ghost', onclick: async () => {
+            const f = await pickFile('image/*'); if (!f) return;
+            try { await setPhoto(d.id, await resizeImage(f)); refreshAvatar(); renderMap(); } catch (e) { toast(String(e.message || e)); }
+          } }, '📷 ' + t(photoOf(d.id) ? 'Change photo' : 'Add photo')),
+          photoOf(d.id) ? h('button', { type: 'button', class: 'ghost danger', onclick: async () => { await removePhoto(d.id); refreshAvatar(); } }, t('Remove photo')) : null)),
+        h('div', { class: 'row2' }, field(t('First name'), inp('firstName', { autocomplete: 'off' })), field(t('Last name'), inp('lastName', { autocomplete: 'off' }))),
+        field(t('Gender'), segmented(GENDERS.map((g) => [g, GENDER_ICON[g] + ' ' + t(g)]), d.gender, (v) => { d.gender = v; refreshAvatar(); })),
+        field(t('Family role'), segmented(ROLES.map((r) => [r, ROLE_ICON[r] + ' ' + t(r)]), d.role, (v) => { d.role = v; })),
+        field(t('Birthday'), h('input', { class: 'input', type: 'date', value: d.birthday || '', max: ymdFromDate(new Date()), onchange: (e) => { d.birthday = e.target.value; } })),
+        field(t('LINE ID'), inp('lineId', { autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: t('their LINE ID, without ~') }), t('Used for the green LINE button.')),
+        h('div', { class: 'row2' }, field(t('Phone'), inp('phone', { type: 'tel', inputmode: 'tel' })), field(t('Email'), inp('email', { type: 'email', inputmode: 'email', autocapitalize: 'off' }))),
+        field(t('Notes'), h('textarea', { class: 'input', rows: 3, value: d.notes || '', placeholder: t('has a dog, likes tea…'), oninput: (e) => { d.notes = e.target.value; } })),
+        h('button', { class: 'primary wide', type: 'button', onclick: () => {
+          d.firstName = d.firstName.trim(); d.lastName = d.lastName.trim();
+          if (!d.firstName && !d.lastName) { toast(t('Please enter a name.')); return; }
+          d.lineId = cleanLineId(d.lineId); d.phone = d.phone.trim(); d.email = d.email.trim();
+          savePerson(houseId, d); m.close(); toast(t('Saved'));
+        } }, t('Save')),
+        existing ? h('button', { class: 'dangerlink', type: 'button', onclick: async () => {
+          if (await confirmDialog({ title: t('Delete {0}?', fullName(d) || t('this person')), ok: t('Delete'), danger: true })) { deletePerson(houseId, d.id); m.close(); toast(t('Deleted.'), { action: { label: t('Undo'), fn: doUndo }, ms: 5000 }); }
+        } }, t('Delete resident')) : null);
+    },
+  });
+}
+
+// ----- LINE -----
+function openLine(rawId) {
+  const clean = cleanLineId(rawId);
+  if (!clean) return;
+  let left = false;
+  const onHide = () => { if (document.visibilityState === 'hidden') left = true; };
+  document.addEventListener('visibilitychange', onHide);
+  window.location.href = lineAppUrl(clean);
+  setTimeout(async () => {
+    document.removeEventListener('visibilitychange', onHide);
+    if (left) return;
+    await copyText(clean);
+    toast(t('LINE did not open. The ID "{0}" was copied.', clean), { ms: 7000, action: { label: t('Open in browser'), fn: () => window.open(lineWebUrl(clean), '_blank', 'noopener') } });
+  }, 1500);
+}
+function openLineList(id) {
+  openModal({
+    title: t('Message on LINE'), back: t('Back'),
+    render(body, m) {
+      const b = blockById(id);
+      if (!b) { m.close(); return; }
+      const list = b.residents.filter((p) => p.lineId);
+      body.appendChild(h('div', { class: 'linehead' }, h('div', { class: 'linelogo' }, 'LINE'), h('div', null, h('b', null, b.houseName), h('div', { class: 'psub' }, t('{0} LINE contacts', list.length)))));
+      if (!list.length) { body.appendChild(h('div', { class: 'empty' }, t('No LINE IDs saved'), h('div', { class: 'psub' }, t('Open Residents and edit a person to add their LINE ID.')))); return; }
+      list.forEach((p) => body.appendChild(h('button', { type: 'button', class: 'linecard', onclick: () => openLine(p.lineId) },
+        avatar(p, 50), h('div', { class: 'pmain' }, h('div', { class: 'pname' }, fullName(p)), h('div', { class: 'psub' }, t(p.role)), h('div', { class: 'lid' }, p.lineId)), h('span', { class: 'chatbtn' }, '💬 ' + t('Chat')))));
+      body.appendChild(h('div', { class: 'fhint center' }, t('If LINE does not open, the ID is copied so you can search for it in LINE.')));
+    },
+  });
+}
+
+// ----- editing a house -----
+function openHouseEdit(id) {
+  const b = blockById(id);
+  if (!b) return;
+  const d = { houseName: b.houseName, colorName: b.colorName, icon: b.icon, decoration: b.decoration || '' };
+  openModal({
+    title: t('Edit House'), live: false, back: t('Back'),
+    render(body, m) {
+      const photoSlot = h('div', { class: 'avslot' });
+      const refreshPhoto = () => {
+        const url = photoOf(id);
+        photoSlot.replaceChildren(url ? h('img', { class: 'thumb', src: url, alt: '' }) : h('div', { class: 'thumb ph' }, d.decoration || d.icon));
+      };
+      refreshPhoto();
+      const iconRow = h('div', { class: 'iconrow' });
+      const drawIcons = () => {
+        iconRow.replaceChildren(...HOUSE_ICONS.map((i) => h('button', { type: 'button', class: 'iconpick' + (i === d.icon ? ' sel' : ''), onclick: () => { d.icon = i; drawIcons(); refreshPhoto(); } }, i)),
+          HOUSE_ICONS.includes(d.icon) ? null : h('button', { type: 'button', class: 'iconpick sel' }, d.icon),
+          h('button', { type: 'button', class: 'iconpick more', onclick: () => openEmojiPicker((em) => { d.icon = em; drawIcons(); refreshPhoto(); }) }, '…'));
+      };
+      drawIcons();
+      const decoSlot = h('div', { class: 'decorow' });
+      const drawDeco = () => decoSlot.replaceChildren(
+        h('span', { class: 'decoval' }, d.decoration || '–'),
+        h('button', { type: 'button', class: 'ghost', onclick: () => openEmojiPicker((em) => { d.decoration = em; drawDeco(); refreshPhoto(); }) }, t('Choose')),
+        d.decoration ? h('button', { type: 'button', class: 'ghost', onclick: () => { d.decoration = ''; drawDeco(); refreshPhoto(); } }, t('Clear')) : null);
+      drawDeco();
+      body.append(
+        h('div', { class: 'photorow' }, photoSlot, h('div', { class: 'pbtnrow' },
+          h('button', { type: 'button', class: 'ghost', onclick: async () => {
+            const f = await pickFile('image/*'); if (!f) return;
+            try { await setPhoto(id, await resizeImage(f)); refreshPhoto(); renderMap(); m.update2 && m.update2(); } catch (e) { toast(String(e.message || e)); }
+          } }, '📷 ' + t(photoOf(id) ? 'Change house photo' : 'Add house photo')),
+          photoOf(id) ? h('button', { type: 'button', class: 'ghost danger', onclick: async () => { await removePhoto(id); refreshPhoto(); renderMap(); } }, t('Remove photo')) : null)),
+        field(t('House name'), h('input', { class: 'input', value: d.houseName, oninput: (e) => { d.houseName = e.target.value; } })),
+        field(t('Color'), swatchRow(d.colorName, (n) => { d.colorName = n; })),
+        field(t('House icon'), iconRow),
+        field(t('Decoration emoji (replaces the icon)'), decoSlot),
+        h('button', { class: 'primary wide', type: 'button', onclick: () => {
+          const name = d.houseName.trim() || b.houseName;
+          updateHouse(id, { houseName: name, colorName: d.colorName, icon: d.icon, decoration: d.decoration || null });
+          m.close();
+        } }, t('Save')));
+    },
+  });
+}
+
+// ----- emoji picker (any emoji at all) -----
+const EMOJI_SETS = [
+  ['Nature', '🌳🌲🌴🌵🌷🌸🌹🌺🌻🌼🌿🍀🍁🍂🌾🪴🌱🪨⛰️🏔️🌊🏞️🌈'],
+  ['Buildings', '🏠🏡🏘️🏢🏬🏪🏫🏥🏦🏣🏤🏛️⛪🕌🛕⛩️🏯🏰🗼🗽🏭🏗️⛲🏮🎡'],
+  ['Signs and things', '🪧🚏🚦🚧⚠️🅿️🛑🚸📮📬🔔🏷️🪑🛋️🔑🗑️♻️🚰🧺🪣🧱🪜'],
+  ['Vehicles', '🚗🚙🚕🚌🚲🛵🏍️🚚🚛🚜🛻🚑🚒🚓⛽🚉🛤️🛶⛵'],
+  ['Animals', '🐕🐈🐦🐇🐢🐟🦆🐿️🐝🦋🐞🐓🐑🐄🦌🐸'],
+  ['Food', '🍎🍊🍋🍇🍓🍑🍒🥕🌽🍅🍆🥬🍉🌰🍙🍵'],
+  ['Fun', '⚽🎈🎏🎑🪁🎃🏀⚾🎪⛺🔥⭐☀️🌙☃️🎄'],
+];
+function openEmojiPicker(onPick) {
+  openModal({
+    title: t('Choose an emoji'), live: false,
+    render(body, m) {
+      const status = h('div', { class: 'fhint' }, t('Type or paste any emoji. On iPhone use the emoji keyboard, on Mac press Control + Command + Space.'));
+      let found = null;
+      const useBtn = h('button', { class: 'primary', type: 'button', disabled: true, onclick: () => { if (found) { m.close(); onPick(found); } } }, t('Use this'));
+      const prev = h('div', { class: 'emojiprev' }, '·');
+      const input = h('input', { class: 'input', placeholder: '🍎', autocomplete: 'off', oninput: (e) => {
+        const v = e.target.value.trim();
+        found = firstEmoji(v);
+        prev.textContent = found || '·';
+        useBtn.disabled = !found;
+        status.textContent = !v ? t('Type or paste any emoji. On iPhone use the emoji keyboard, on Mac press Control + Command + Space.') : found ? t('Looks good.') : t('That is not an emoji.');
+        status.classList.toggle('bad', !!v && !found);
+      } });
+      body.append(h('div', { class: 'emojirow' }, prev, input, useBtn), status);
+      for (const [name, set] of EMOJI_SETS) {
+        const list = (typeof Intl !== 'undefined' && Intl.Segmenter) ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(set)].map((x) => x.segment) : Array.from(set);
+        body.append(h('div', { class: 'grouphead' }, t(name)), h('div', { class: 'emojigrid' }, list.map((em) => h('button', { type: 'button', class: 'emo', onclick: () => { m.close(); onPick(em); } }, em))));
+      }
+      setTimeout(() => input.focus({ preventScroll: true }), 50);
+    },
+  });
+}
+
+// ----- sections -----
+function openSectionEditor(id) {
+  const existing = id ? S.sections.find((s) => s.id === id) : null;
+  const d = existing ? { name: existing.name, colorName: existing.colorName } : { name: t('Section {0}', S.sections.length + 1), colorName: nextSectionColor() };
+  openModal({
+    title: existing ? t('Edit section') : t('New section'), live: false,
+    render(body, m) {
+      body.append(
+        field(t('Section name'), h('input', { class: 'input', value: d.name, placeholder: t('e.g. North side'), oninput: (e) => { d.name = e.target.value; } }), t('Streets in Japan often have no name. A section is any named area you paint on the map.')),
+        field(t('Color'), swatchRow(d.colorName, (n) => { d.colorName = n; }, SECTION_COLORS)),
+        h('button', { class: 'primary wide', type: 'button', onclick: () => {
+          const name = d.name.trim() || t('Section {0}', S.sections.length + 1);
+          if (existing) updateSection(existing.id, { name, colorName: d.colorName });
+          else { const sec = addSection(name, d.colorName); ui.tool = { type: 'section', sectionId: sec.id }; renderAll(); toast(t('Now tap cells to put them in "{0}".', name)); }
+          m.close();
+        } }, t('Save')),
+        existing ? h('div', { class: 'fhint center' }, t('{0} cells', existing.cells.length)) : null,
+        existing ? h('button', { class: 'dangerlink', type: 'button', onclick: async () => {
+          if (await confirmDialog({ title: t('Delete section "{0}"?', existing.name), message: t('Only the colored area and its name are removed. Houses are not touched.'), ok: t('Delete'), danger: true })) {
+            deleteSection(existing.id); if (ui.tool && ui.tool.sectionId === existing.id) ui.tool.sectionId = null; m.close(); renderAll();
+          }
+        } }, t('Delete section')) : null);
+    },
+  });
+}
+
+// ----- birthdays -----
+function openUpcoming() {
+  openModal({
+    title: t('Upcoming birthdays'),
+    render(body) {
+      const list = upcomingBirthdays(120);
+      if (!list.length) { body.appendChild(h('div', { class: 'empty' }, h('div', { class: 'big' }, '🎂'), h('div', null, t('No birthdays in the next 120 days.')), h('div', { class: 'psub' }, t('Add a birthday to a resident and it will show here.')))); }
+      list.forEach((x) => body.appendChild(h('div', { class: 'prow static' },
+        h('div', { class: 'bdate' }, h('div', { class: 'bm' }, fmtMD(x.person.birthday)), h('div', { class: 'bd' }, x.days === 0 ? t('Today') : x.days === 1 ? t('Tomorrow') : t('In {0} days', x.days))),
+        h('div', { class: 'pmain' }, h('div', { class: 'pname' }, fullName(x.person) || '?'), h('div', { class: 'psub' }, `${placeLabel(x.block)} · ${t('turns {0}', x.turns)}`)),
+        x.person.lineId ? h('button', { type: 'button', class: 'linebtn', onclick: () => openLine(x.person.lineId) }, 'LINE') : null)));
+      body.append(h('button', { class: 'primary wide', type: 'button', onclick: exportICS }, '📅 ' + t('Add all birthdays to my Calendar')),
+        h('div', { class: 'fhint center' }, t('Downloads a calendar file. Open it on your iPhone or Mac and choose Add All. Every birthday repeats yearly with a reminder.')));
+    },
+  });
+}
+function exportICS() {
+  const { text, count } = buildBirthdayICS();
+  if (!count) { toast(t('No birthdays to export yet.')); return; }
+  download('neighbor-birthdays.ics', text, 'text/calendar');
+  toast(t('Calendar file with {0} birthdays downloaded.', count));
+}
+
+// ----- export / backup -----
+function exportCSV() {
+  download(`neighborhoodskout-${ymdFromDate(new Date())}.csv`, buildCSV(), 'text/csv;charset=utf-8');
+  toast(t('CSV downloaded. Open it in Excel, Numbers or Google Sheets.'));
+}
+async function buildFullBackup() {
+  const photos = {};
+  if (!usingFallback) {
+    for (const k of await kv.keys()) {
+      if (typeof k === 'string' && k.startsWith('photo:')) { const blob = await kv.get(k); if (blob) photos[k.slice(6)] = await blobToDataURL(blob); }
+    }
+  }
+  return JSON.stringify({ app: 'NeighborhoodSkout', format: 'full-backup', version: 2, exportedAt: nowISO(), state: S, photos }, null, 1);
+}
+async function downloadFullBackup() {
+  try {
+    const json = await buildFullBackup();
+    download(`neighborhoodskout-backup-${ymdFromDate(new Date())}.json`, json, 'application/json');
+    settings.lastFileBackup = nowISO(); saveSettings(); refreshModals();
+    toast(t('Backup file downloaded. Keep it somewhere safe, like iCloud Drive.'));
+  } catch (e) { toast(t('Backup failed: {0}', String(e.message || e))); }
+}
+
+// ----- importing -----
+async function importFlow() {
+  const file = await pickFile('.csv,.json,.txt,text/csv,application/json,text/plain');
+  if (!file) return;
+  await importBuffer(await file.arrayBuffer(), file.name);
+}
+async function importBuffer(buf, name) {
+  const { text, encoding } = decodeBytes(buf);
+  const trimmed = text.replace(/^﻿/, '').trim();
+  try {
+    if (trimmed.startsWith('{')) {
+      const j = JSON.parse(trimmed);
+      if (j.format === 'full-backup' && j.state) {
+        const st = normalizeState(j.state);
+        return showImportPreview({ name, encoding, kind: 'restore', replaceState: st, photos: j.photos || {}, info: t('A complete backup from this app.') });
+      }
+      if (Array.isArray(j.streets) && Array.isArray(j.blocks)) {
+        const st = convertLegacyStore(j);
+        return showImportPreview({ name, encoding, kind: 'legacy', replaceState: st, info: t('This is data from the old street-based app. It will be converted to the new grid: every street becomes a section.') });
+      }
+      if (Array.isArray(j.blocks) && (j.columns || j.sections)) {
+        return showImportPreview({ name, encoding, kind: 'restore', replaceState: normalizeState(j), info: t('A map saved by this app.') });
+      }
+      throw new Error(t('This JSON file is not a NeighborhoodSkout file.'));
+    }
+    const rows = csvParse(text);
+    const kind = detectCSVKind(rows);
+    if (kind === 'grid') {
+      const merge = planCSVImport(rows, 'merge'), replace = planCSVImport(rows, 'replace');
+      return showImportPreview({ name, encoding, kind: 'grid', merge, replace });
+    }
+    if (kind === 'legacy') {
+      const st = convertLegacyStore(parseLegacyCSV(rows));
+      return showImportPreview({ name, encoding, kind: 'legacy', replaceState: st, info: t('This is a CSV from the old street-based app. It will be converted to the new grid: every street becomes a section.') });
+    }
+    throw new Error(t('I could not recognize this file. It needs a header row such as Kind,Section,HouseName,Row,Col…'));
+  } catch (e) {
+    toast(t('Could not import: {0}', String(e.message || e)), { ms: 7000 });
+  }
+}
+async function applyImported(newState, label, photos) {
+  await addBackup(t('Before import'), 'auto').catch(() => {});
+  if (photos) for (const [pid, url] of Object.entries(photos)) { try { await setPhoto(pid, await dataURLToBlob(url)); } catch (e) { /* skip one bad photo */ } }
+  pushUndo();
+  S = normalizeState(newState);
+  reindex();
+  ui.moving = null; ui.moveSrc = null;
+  scheduleSave();
+  renderAll();
+  toast(label, { action: { label: t('Undo'), fn: doUndo }, ms: 6000 });
+}
+const countsOf = (st) => ({ houses: st.blocks.filter((b) => b.kind === 'house').length, people: st.blocks.reduce((n, b) => n + b.residents.length, 0), sections: st.sections.length });
+
+function showImportPreview(p) {
+  openModal({
+    title: t('Import preview'), live: false,
+    render(body, m) {
+      body.appendChild(h('div', { class: 'fhint' }, `${p.name} · ${t('read as {0}', p.encoding)}`));
+      const go = async (st, label) => { m.close(); await applyImported(st, label, p.photos); };
+      if (p.kind === 'grid') {
+        const pl = p.merge;
+        const c = pl.counts;
+        const bits = [];
+        if (c.newHouses) bits.push(t('{0} new houses', c.newHouses));
+        if (c.updatedHouses) bits.push(t('{0} houses updated', c.updatedHouses));
+        if (c.newPeople) bits.push(t('{0} new people', c.newPeople));
+        if (c.updatedPeople) bits.push(t('{0} people updated', c.updatedPeople));
+        if (c.cells) bits.push(t('{0} road/decoration cells', c.cells));
+        body.appendChild(h('div', { class: 'sumbox' }, h('div', { class: 'sumline' }, bits.length ? bits.join(' · ') : t('Nothing would change.')),
+          h('div', { class: 'psub' }, t('Anything that is not in the file stays as it is.'))));
+        const MAX = 150;
+        if (pl.changes.length) {
+          body.appendChild(h('div', { class: 'grouphead' }, t('Changes')));
+          pl.changes.slice(0, MAX).forEach((x) => body.appendChild(h('div', { class: 'chg ' + x.kind }, (x.kind === 'new' ? '＋ ' : '✎ ') + x.text)));
+          if (pl.changes.length > MAX) body.appendChild(h('div', { class: 'psub' }, t('…and {0} more.', pl.changes.length - MAX)));
+        }
+        if (pl.errors.length) {
+          body.appendChild(h('div', { class: 'grouphead bad' }, t('Rows I could not read ({0})', pl.errors.length)));
+          pl.errors.forEach((x) => body.appendChild(h('div', { class: 'chg err' }, (x.row ? t('Row {0}: ', x.row) : '') + x.msg)));
+          body.appendChild(h('div', { class: 'psub' }, t('These rows are skipped. Fix them in the spreadsheet and import again if you need them.')));
+        }
+        if (pl.warnings.length) {
+          body.appendChild(h('div', { class: 'grouphead' }, t('Notes')));
+          pl.warnings.forEach((x) => body.appendChild(h('div', { class: 'chg warn' }, x)));
+        }
+        const rc = countsOf(p.replace.state);
+        body.append(
+          h('button', { class: 'primary wide', type: 'button', disabled: !bits.length && !pl.changes.length, onclick: () => go(pl.state, t('Imported.')) }, t('Apply these changes')),
+          h('div', { class: 'or' }, t('or')),
+          h('button', { class: 'dangerbtn wide', type: 'button', onclick: async () => {
+            if (await confirmDialog({ title: t('Replace everything?'), message: t('The map becomes exactly what is in the file ({0} houses, {1} people). A backup is made first.', rc.houses, rc.people), ok: t('Replace'), danger: true })) go(p.replace.state, t('Map replaced.'));
+          } }, t('Replace everything with this file')));
+        return;
+      }
+      const rc = countsOf(p.replaceState);
+      body.append(h('div', { class: 'sumbox' }, h('div', { class: 'sumline' }, `${t('{0} houses', rc.houses)} · ${t('{0} people', rc.people)} · ${t('{0} sections', rc.sections)}`), h('div', { class: 'psub' }, p.info)),
+        p.photos && Object.keys(p.photos).length ? h('div', { class: 'psub' }, t('{0} photos included.', Object.keys(p.photos).length)) : null,
+        h('div', { class: 'psub' }, t('Your current map is backed up first, and you can undo.')),
+        h('button', { class: 'primary wide', type: 'button', onclick: async () => {
+          if (!S.blocks.length || await confirmDialog({ title: t('Replace everything?'), message: t('Your current map is replaced by this file. A backup is made first.'), ok: t('Replace'), danger: true })) go(p.replaceState, p.kind === 'legacy' ? t('Converted and imported.') : t('Restored.'));
+        } }, t('Replace everything with this file')));
+    },
+  });
+}
+
+// ----- settings -----
+function openSettings() {
+  openModal({
+    title: t('Settings'),
+    render(body, m) {
+      const setS = (k, v) => { settings[k] = v; saveSettings(); if (k === 'lang') { LANG = detectLang(v); } renderAll(); };
+      const hourSel = h('select', { class: 'input', onchange: (e) => setS('birthdayHour', +e.target.value) },
+        Array.from({ length: 24 }, (_, i) => h('option', { value: i, selected: i === settings.birthdayHour }, `${pad2(i)}:00`)));
+      const status = saveStatus.ok
+        ? h('div', { class: 'okline' }, '✓ ' + t('Saved on this device') + (saveStatus.at ? ` · ${saveStatus.at.toLocaleTimeString()}` : ''))
+        : h('div', { class: 'badline' }, '⚠️ ' + t('Not saved: {0}', saveStatus.error || ''));
+      const lastBk = settings.lastFileBackup ? fmtStamp(settings.lastFileBackup) : t('never');
+      const bkBox = h('div', { class: 'bklist' }, h('div', { class: 'psub' }, t('Loading…')));
+      getBackups().then((list) => {
+        bkBox.replaceChildren();
+        if (!list.length) bkBox.appendChild(h('div', { class: 'psub' }, t('No backups yet.')));
+        list.forEach((bk) => bkBox.appendChild(h('div', { class: 'bkrow' },
+          h('div', { class: 'pmain' }, h('div', { class: 'pname' }, `${fmtStamp(bk.at)}`), h('div', { class: 'psub' }, `${bk.label} · ${t('{0} houses', bk.houses)} · ${t('{0} people', bk.people)}`)),
+          h('button', { type: 'button', class: 'ghost', onclick: async () => {
+            if (!(await confirmDialog({ title: t('Restore this backup?'), message: t('Your current map is backed up first.'), ok: t('Restore') }))) return;
+            await addBackup(t('Before restore'), 'auto').catch(() => {});
+            pushUndo(); S = normalizeState(JSON.parse(bk.json)); reindex(); scheduleSave(); renderAll(); toast(t('Backup restored.'), { action: { label: t('Undo'), fn: doUndo } });
+          } }, t('Restore')),
+          h('button', { type: 'button', class: 'ghost danger', 'aria-label': t('Delete'), onclick: async () => { await deleteBackup(bk.id); m.update(); } }, '✕'))));
+      });
+      body.append(
+        h('div', { class: 'sect' }, t('Language')),
+        segmented([['auto', t('Auto')], ['en', 'English'], ['ja', '日本語']], settings.lang, (v) => setS('lang', v)),
+        h('div', { class: 'sect' }, t('Map')),
+        field(t('Grass cells'), segmented([['mint', t('Mint')], ['plain', t('Plain')]], settings.grass, (v) => setS('grass', v)), t('Mint fills empty cells with soft green. Plain shows only a dashed outline.')),
+        h('div', { class: 'sect' }, t('Birthdays')),
+        field(t('Reminder time (for the calendar file)'), hourSel),
+        h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: settings.dayBefore, onchange: (e) => setS('dayBefore', e.target.checked) }), h('span', null, t('Also remind me the day before'))),
+        h('button', { class: 'ghost wide', type: 'button', onclick: openUpcoming }, '🎂 ' + t('Upcoming birthdays')),
+        h('button', { class: 'ghost wide', type: 'button', onclick: exportICS }, '📅 ' + t('Add all birthdays to my Calendar')),
+        h('div', { class: 'sect' }, t('Your data')),
+        status,
+        h('div', { class: 'psub' }, saveStatus.persisted === true ? t('The browser has promised not to clear this data automatically.') : saveStatus.persisted === false ? t('The browser may clear this data if the device runs low on space. Download a backup file now and then.') : ''),
+        h('div', { class: 'psub' }, t('Last backup file: {0}', lastBk)),
+        h('div', { class: 'btnrow' },
+          h('button', { class: 'ghost', type: 'button', onclick: downloadFullBackup }, '⬇️ ' + t('Backup file')),
+          h('button', { class: 'ghost', type: 'button', onclick: exportCSV }, '📄 ' + t('Export CSV')),
+          h('button', { class: 'ghost', type: 'button', onclick: importFlow }, '⬆️ ' + t('Import…'))),
+        h('div', { class: 'btnrow' }, h('button', { class: 'ghost', type: 'button', onclick: async () => { await addBackup(t('Manual backup'), 'manual'); toast(t('Backup saved inside the app.')); m.update(); } }, '💾 ' + t('Back up now (inside the app)'))),
+        h('div', { class: 'sect' }, t('Backups inside the app')),
+        bkBox,
+        h('div', { class: 'sect' }, t('About')),
+        h('div', { class: 'psub' }, `NeighborhoodSkout ${APP_VERSION}`),
+        h('div', { class: 'psub' }, t('Everything stays on this device. There is no account and no server.')),
+        h('button', { class: 'dangerlink', type: 'button', onclick: async () => {
+          if (!(await confirmDialog({ title: t('Erase the whole map?'), message: t('All houses, people and decorations are removed from the map. A backup is kept inside the app, so you can still restore it.'), ok: t('Erase'), danger: true }))) return;
+          await addBackup(t('Before erase'), 'auto').catch(() => {});
+          pushUndo(); S = blankState(); reindex(); scheduleSave(); renderAll(); toast(t('Map erased.'), { action: { label: t('Undo'), fn: doUndo } });
+        } }, t('Erase the whole map')));
+    },
+  });
+}
+
+function openMenu() {
+  openSheet(t('Menu'), '', [
+    { label: '🎂 ' + t('Upcoming birthdays'), onClick: openUpcoming },
+    { label: '📄 ' + t('Export CSV (for Excel)'), onClick: exportCSV },
+    { label: '⬆️ ' + t('Import CSV or backup…'), onClick: importFlow },
+    { label: '📅 ' + t('Birthdays to my Calendar'), onClick: exportICS },
+    { label: '⬇️ ' + t('Download backup file'), onClick: downloadFullBackup },
+  ]);
+}
+
+// ===== Startup =====
+function makeTouchIcon() {
+  try {
+    const c = h('canvas', { width: 180, height: 180 });
+    const x = c.getContext('2d');
+    x.fillStyle = '#eaf4e4'; x.fillRect(0, 0, 180, 180);
+    x.fillStyle = '#38383d'; x.fillRect(0, 100, 180, 34);
+    x.fillStyle = '#ecd028'; for (let i = 0; i < 4; i++) x.fillRect(12 + i * 46, 114, 26, 6);
+    x.font = '84px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('🏡', 90, 62);
+    const link = h('link', { rel: 'apple-touch-icon', href: c.toDataURL('image/png') });
+    document.head.appendChild(link);
+    const fav = h('link', { rel: 'icon', href: c.toDataURL('image/png') });
+    document.head.appendChild(fav);
+  } catch (e) { /* icon is optional */ }
+}
+
+async function main() {
+  makeTouchIcon();
+  await initStorage();
+  LANG = detectLang(settings.lang);
+  document.title = 'NeighborhoodSkout';
+  onChange = renderAll;
+  onSaveStatus = () => { renderBanners(); refreshModals(); };
+
+  // static controls
+  $('#btnSettings').addEventListener('click', openSettings);
+  $('#btnMenu').addEventListener('click', openMenu);
+  $('#btnEdit').addEventListener('click', () => {
+    ui.edit = !ui.edit; ui.moving = null; ui.moveSrc = null;
+    if (!ui.edit) ui.tool = null;
+    renderAll();
+  });
+  $('#btnZoomOut').addEventListener('click', () => setZoom(settings.zoom - 1));
+  $('#btnZoomIn').addEventListener('click', () => setZoom(settings.zoom + 1));
+  $('#map').addEventListener('click', onMapClick);
+  setupStrokes();
+
+  // keyboard: Esc closes, Ctrl/Cmd+Z undoes
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { if (sheetOpen) { sheetOpen.close(); return; } closeTopModal(); }
+    const tag = (e.target && e.target.tagName) || '';
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !/INPUT|TEXTAREA|SELECT/.test(tag)) { e.preventDefault(); doUndo(); }
+  });
+  // ctrl/cmd + wheel zooms the map
+  $('#mapScroll').addEventListener('wheel', (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    setZoom(settings.zoom + (e.deltaY < 0 ? 1 : -1));
+  }, { passive: false });
+
+  let rz = null;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderMap, 80); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSave(); else renderBanners(); });
+  window.addEventListener('pagehide', flushSave);
+
+  renderAll();
+  $('#loading').remove();
+}
+
+window.__nsk = {
+  get S() { return S; }, get settings() { return settings; }, ui, kv, t,
+  importBuffer, buildCSV, csvParse, planCSVImport, convertLegacyStore, buildBirthdayICS, upcomingBirthdays,
+  parseDateLoose, firstEmoji, renderAll, doSave, getBackups, nextBirthday,
+  setLang(l) { settings.lang = l; LANG = detectLang(l); renderAll(); },
+};
+main().catch((e) => {
+  const l = document.getElementById('loading');
+  if (l) l.textContent = 'Could not start: ' + (e && e.message || e);
+  console.error(e);
+});
+
+})();
+</script>
+</body>
+</html>
